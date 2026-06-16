@@ -21,28 +21,30 @@ function roundCurrency(value: number) {
 }
 
 export function positionsToDashboardData(snapshot: PositionsSnapshot): SnapshotDashboardData {
-  const holdings: Holding[] = snapshot.positions.map((position) => ({
-    symbol: position.ticker,
-    quantity: position.shares,
-    costBasis: position.costBasisTotal,
-    costPerShare: position.averageCostBasis,
-    marketPrice: position.currentPrice,
-    marketValue: position.currentValue,
-    gainLoss: position.totalGainLossDollar ?? roundCurrency(position.currentValue - position.costBasisTotal),
-    annualDividends: position.estimatedAnnualIncome ?? 0,
-    securityName: position.securityName,
-    accountName: position.accountName,
-    securityType: position.type,
-    todaysGainLossDollar: position.todaysGainLossDollar,
-    todaysGainLossPercent: position.todaysGainLossPercent,
-    totalGainLossPercent: position.totalGainLossPercent,
-    exDate: position.exDate,
-    amountPerShare: position.amountPerShare,
-    payDate: position.payDate,
-    distributionYield: position.distributionYield,
-    secYield: position.secYield,
-    estimatedAnnualIncome: position.estimatedAnnualIncome ?? 0,
-  }))
+  const holdings: Holding[] = snapshot.positions
+    .map((position) => ({
+      symbol: position.ticker,
+      quantity: position.shares,
+      costBasis: position.costBasisTotal,
+      costPerShare: position.averageCostBasis,
+      marketPrice: position.currentPrice,
+      marketValue: position.currentValue,
+      gainLoss: position.totalGainLossDollar ?? roundCurrency(position.currentValue - position.costBasisTotal),
+      annualDividends: position.estimatedAnnualIncome ?? 0,
+      securityName: position.securityName,
+      accountName: position.accountName,
+      securityType: position.type,
+      todaysGainLossDollar: position.todaysGainLossDollar,
+      todaysGainLossPercent: position.todaysGainLossPercent,
+      totalGainLossPercent: position.totalGainLossPercent,
+      exDate: position.exDate,
+      amountPerShare: position.amountPerShare,
+      payDate: position.payDate,
+      distributionYield: position.distributionYield,
+      secYield: position.secYield,
+      estimatedAnnualIncome: position.estimatedAnnualIncome ?? 0,
+    }))
+    .sort((a, b) => b.marketValue - a.marketValue)
 
   const totalMarketValue = roundCurrency(holdings.reduce((sum, holding) => sum + holding.marketValue, 0))
   const totalCostBasis = roundCurrency(holdings.reduce((sum, holding) => sum + holding.costBasis, 0))

@@ -60,14 +60,22 @@ export default function Dashboard({
   const passiveIncome = dividendIncome + hysaIncome.annualInterest
   const unrealizedReturn = portfolio.totalCostBasis ? (portfolio.totalGainLoss / portfolio.totalCostBasis) * 100 : 0
   const dayChange = positionsSnapshot?.positions.reduce((sum, position) => sum + (position.todaysGainLossDollar ?? 0), 0) ?? 0
-  const donutData = holdings.slice().sort((a, b) => b.marketValue - a.marketValue).map((holding) => ({ name: holding.symbol, value: holding.marketValue }))
+  const holdingsCount = holdings.length
+  const largestHolding = holdings.slice().sort((a, b) => b.marketValue - a.marketValue)[0]
+  const largestHoldingWeight = largestHolding && portfolio.totalMarketValue ? (largestHolding.marketValue / portfolio.totalMarketValue) * 100 : 0
+  const largestWinner = holdings.filter((holding) => holding.gainLoss > 0).sort((a, b) => b.gainLoss - a.gainLoss)[0]
+  const largestLoser = holdings.filter((holding) => holding.gainLoss < 0).sort((a, b) => a.gainLoss - b.gainLoss)[0]
+  const portfolioDividendYield = portfolio.totalMarketValue ? (dividendIncome / portfolio.totalMarketValue) * 100 : 0
+  const averagePositionSize = holdingsCount ? portfolio.totalMarketValue / holdingsCount : 0
+  const donutData = holdings.slice().sort((a, b) => b.marketValue - a.marketValue).map((holding) => ({ ticker: holding.symbol, name: holding.securityName ?? holding.symbol, value: holding.marketValue }))
+  const totalDividendIncome = holdings.reduce((sum, holding) => sum + (holding.estimatedAnnualIncome ?? 0), 0)
   const incomeByHolding = holdings
     .filter((holding) => (holding.estimatedAnnualIncome ?? 0) > 0)
     .sort((a, b) => (b.estimatedAnnualIncome ?? 0) - (a.estimatedAnnualIncome ?? 0))
   const gainLossPositions = positionsSnapshot?.positions.filter((position) => position.totalGainLossDollar !== undefined && position.totalGainLossDollar !== 0) ?? []
   const hasGainLossLeaders = gainLossPositions.length > 0
-  const topGainers = gainLossPositions.slice().sort((a, b) => (b.totalGainLossDollar ?? 0) - (a.totalGainLossDollar ?? 0)).slice(0, 3)
-  const topLosers = gainLossPositions.slice().sort((a, b) => (a.totalGainLossDollar ?? 0) - (b.totalGainLossDollar ?? 0)).slice(0, 3)
+  const topGainers = gainLossPositions.filter((position) => (position.totalGainLossDollar ?? 0) > 0).sort((a, b) => (b.totalGainLossDollar ?? 0) - (a.totalGainLossDollar ?? 0)).slice(0, 3)
+  const topLosers = gainLossPositions.filter((position) => (position.totalGainLossDollar ?? 0) < 0).sort((a, b) => (a.totalGainLossDollar ?? 0) - (b.totalGainLossDollar ?? 0)).slice(0, 3)
   const fullNetWorthAllocation = [
     ...(snapshotData?.accountAllocation.map((account) => ({
       ...account,
@@ -100,12 +108,38 @@ export default function Dashboard({
         <div className="net-worth-main">
           <span>Total Net Worth</span>
           <strong>{formatCurrency(netWorth, { compact: true })}</strong>
+          <div className="hero-support-metrics">
+            <div>
+              <span>Unrealized Gain</span>
+              <strong className={portfolio.totalGainLoss >= 0 ? 'positive' : 'negative'}>{formatSignedNumber(portfolio.totalGainLoss, { currency: true })}</strong>
+            </div>
+            <div>
+              <span>Total Return</span>
+              <strong>{formatPercent(unrealizedReturn)}</strong>
+            </div>
+            <div>
+              <span>Annual Passive Income</span>
+              <strong>{formatCurrency(passiveIncome, { compact: true })}</strong>
+            </div>
+          </div>
           <em>Investment Portfolio + HYSA + Checking / Bank Cash</em>
         </div>
         <div className="net-worth-formula">
-          <span>{formatCurrency(portfolio.totalMarketValue, { compact: true })} investments</span>
-          <span>{formatCurrency(hysaSettings.balance, { compact: true })} HYSA</span>
-          <span>{formatCurrency(bankCashSettings.balance, { compact: true })} bank cash</span>
+          <div>
+            <span>Investments</span>
+            <strong>{formatCurrency(portfolio.totalMarketValue, { compact: true })}</strong>
+            <em>{formatPercent(netWorth ? (portfolio.totalMarketValue / netWorth) * 100 : 0)}</em>
+          </div>
+          <div>
+            <span>HYSA</span>
+            <strong>{formatCurrency(hysaSettings.balance, { compact: true })}</strong>
+            <em>{formatPercent(netWorth ? (hysaSettings.balance / netWorth) * 100 : 0)}</em>
+          </div>
+          <div>
+            <span>Bank Cash</span>
+            <strong>{formatCurrency(bankCashSettings.balance, { compact: true })}</strong>
+            <em>{formatPercent(netWorth ? (bankCashSettings.balance / netWorth) * 100 : 0)}</em>
+          </div>
         </div>
       </div>
 
@@ -115,11 +149,11 @@ export default function Dashboard({
       </div>
 
       <div className="metrics-row">
-        <MetricCard title="Investment Portfolio" value={formatCurrency(portfolio.totalMarketValue, { compact: true })} sub={positionsSnapshot ? 'From Fidelity positions CSV' : 'Import positions CSV to populate'} trend="Current" positive />
-        <MetricCard title="HYSA Balance" value={formatCurrency(hysaSettings.balance, { compact: true })} sub={`${formatPercent(hysaSettings.apy)} APY, daily compounding estimate`} trend={formatCurrency(hysaIncome.annualInterest, { compact: true })} positive />
-        <MetricCard title="Checking / Bank Cash" value={formatCurrency(bankCashSettings.balance, { compact: true })} sub={bankCashSettings.notes || 'Manual cash balance'} trend="Manual" />
-        <MetricCard title="Unrealized P/L" value={formatSignedNumber(portfolio.totalGainLoss, { currency: true })} sub={`${formatPercent(unrealizedReturn)} total return`} trend={formatSignedNumber(dayChange, { currency: true })} positive={portfolio.totalGainLoss >= 0} />
-        <MetricCard title="Passive Income" value={formatCurrency(passiveIncome, { compact: true })} sub="Dividends from CSV + HYSA interest" trend={formatCurrency(dividendIncome, { compact: true })} positive />
+        <MetricCard title="Investment Portfolio" value={formatCurrency(portfolio.totalMarketValue, { compact: true })} sub={positionsSnapshot ? 'From Fidelity positions CSV' : 'Import positions CSV to populate'} positive />
+        <MetricCard title="HYSA Balance" value={formatCurrency(hysaSettings.balance, { compact: true })} sub={`${formatPercent(hysaSettings.apy)} APY, daily compounding estimate`} positive />
+        <MetricCard title="Checking / Bank Cash" value={formatCurrency(bankCashSettings.balance, { compact: true })} sub={bankCashSettings.notes || 'Manual cash balance'} />
+        <MetricCard title="Unrealized P/L" value={formatSignedNumber(portfolio.totalGainLoss, { currency: true })} sub={`${formatPercent(unrealizedReturn)} total return today ${formatSignedNumber(dayChange, { currency: true })}`} positive={portfolio.totalGainLoss >= 0} />
+        <MetricCard title="Passive Income" value={formatCurrency(passiveIncome, { compact: true })} sub={`${formatCurrency(dividendIncome, { compact: true })} dividends + HYSA interest`} positive />
       </div>
 
       <div className={hasGainLossLeaders ? 'snapshot-overview-grid' : 'snapshot-overview-grid no-leaders'}>
@@ -127,10 +161,54 @@ export default function Dashboard({
           <div className="chart-header">
             <div>
               <h3>Allocation by Holding</h3>
-              <p className="panel-subtitle">Current investment holdings from Fidelity positions CSV.</p>
+              <p className="panel-subtitle">Ranked portfolio weights from Fidelity positions CSV.</p>
             </div>
           </div>
-          {holdings.length ? <DonutChart data={donutData} total={portfolio.totalMarketValue} /> : <div className="source-empty">Import a Fidelity positions CSV to see holding allocation.</div>}
+          {holdings.length ? (
+            <DonutChart
+              data={donutData}
+              total={portfolio.totalMarketValue}
+              holdingsCount={holdingsCount}
+            />
+          ) : <div className="source-empty">Import a Fidelity positions CSV to see holding allocation.</div>}
+        </Card>
+
+        <Card className="snapshot-panel portfolio-stats-card">
+          <div className="chart-header">
+            <div>
+              <h3>Portfolio Statistics</h3>
+              <p className="panel-subtitle">Snapshot summary from imported holdings.</p>
+            </div>
+          </div>
+          <div className="portfolio-stats-grid">
+            <div>
+              <span>Holdings</span>
+              <strong>{holdingsCount}</strong>
+            </div>
+            <div>
+              <span>Largest Position</span>
+              <strong>{largestHolding?.symbol ?? '-'}</strong>
+              <em>{largestHolding ? `${formatCurrency(largestHolding.marketValue, { compact: true })} · ${formatPercent(largestHoldingWeight)}` : '-'}</em>
+            </div>
+            <div>
+              <span>Largest Winner</span>
+              <strong className="positive">{largestWinner?.symbol ?? '-'}</strong>
+              <em className="positive">{largestWinner ? formatSignedNumber(largestWinner.gainLoss, { currency: true }) : '-'}</em>
+            </div>
+            <div>
+              <span>Largest Loser</span>
+              <strong className="negative">{largestLoser?.symbol ?? '-'}</strong>
+              <em className="negative">{largestLoser ? formatSignedNumber(largestLoser.gainLoss, { currency: true }) : '-'}</em>
+            </div>
+            <div>
+              <span>Dividend Yield</span>
+              <strong>{formatPercent(portfolioDividendYield)}</strong>
+            </div>
+            <div>
+              <span>Avg. Position Size</span>
+              <strong>{formatCurrency(averagePositionSize, { compact: true })}</strong>
+            </div>
+          </div>
         </Card>
 
         <Card className="snapshot-panel">
@@ -164,13 +242,13 @@ export default function Dashboard({
               <div>
                 <span>Top gainers</span>
                 {topGainers.map((position) => (
-                  <strong key={position.id}>{position.ticker} {formatSignedNumber(position.totalGainLossDollar ?? 0, { currency: true })}</strong>
+                  <strong className={(position.totalGainLossDollar ?? 0) >= 0 ? 'positive' : 'negative'} key={position.id}>{position.ticker} {formatSignedNumber(position.totalGainLossDollar ?? 0, { currency: true })}</strong>
                 ))}
               </div>
               <div>
                 <span>Top losers</span>
                 {topLosers.map((position) => (
-                  <strong key={position.id}>{position.ticker} {formatSignedNumber(position.totalGainLossDollar ?? 0, { currency: true })}</strong>
+                  <strong className={(position.totalGainLossDollar ?? 0) >= 0 ? 'positive' : 'negative'} key={position.id}>{position.ticker} {formatSignedNumber(position.totalGainLossDollar ?? 0, { currency: true })}</strong>
                 ))}
               </div>
             </div>
@@ -196,7 +274,7 @@ export default function Dashboard({
           <div><span>Monthly passive income</span><strong>{formatCurrency(passiveIncome / 12)}</strong></div>
           <div><span>Daily passive income</span><strong>{formatCurrency(passiveIncome / 365)}</strong></div>
           <div><span>Hourly passive income</span><strong>{formatCurrency(passiveIncome / 365 / 24)}</strong></div>
-          <div><span>Per minute</span><strong>{formatCurrency(passiveIncome / 365 / 24 / 60)}</strong></div>
+          <div><span>Per minute passive income</span><strong>{formatCurrency(passiveIncome / 365 / 24 / 60)}</strong></div>
         </div>
       </Card>
 
@@ -204,7 +282,6 @@ export default function Dashboard({
         <Card className="cash-income-module">
           <div className="chart-header">
             <div>
-              <div className="eyebrow">Manual Cash</div>
               <h3>HYSA Interest</h3>
               <p className="panel-subtitle">Manual HYSA balance and APY. Daily compounding estimate.</p>
             </div>
@@ -215,6 +292,7 @@ export default function Dashboard({
             <div><span>Annual interest</span><strong>{formatCurrency(hysaIncome.annualInterest, { compact: true })}</strong></div>
             <div><span>Monthly</span><strong>{formatCurrency(hysaIncome.monthlyInterest)}</strong></div>
             <div><span>Daily</span><strong>{formatCurrency(hysaIncome.dailyInterest)}</strong></div>
+            <div><span>Hourly</span><strong>{formatCurrency(hysaIncome.hourlyInterest)}</strong></div>
             <div><span>Per minute</span><strong>{formatCurrency(hysaIncome.minuteInterest)}</strong></div>
           </div>
         </Card>
@@ -235,6 +313,7 @@ export default function Dashboard({
                     <th>Ticker</th>
                     <th>Name</th>
                     <th>Est. Annual Income</th>
+                    <th>% of Dividend Income</th>
                     <th>Yield</th>
                     <th>Pay Date</th>
                   </tr>
@@ -245,6 +324,14 @@ export default function Dashboard({
                       <td className="ticker-cell">{holding.symbol}</td>
                       <td>{holding.securityName ?? holding.symbol}</td>
                       <td className="numeric-cell">{formatCurrency(holding.estimatedAnnualIncome ?? 0)}</td>
+                      <td className="numeric-cell">
+                        <div className="dividend-contribution-cell">
+                          <div className="dividend-contribution-track">
+                            <i style={{ width: `${Math.min(totalDividendIncome ? ((holding.estimatedAnnualIncome ?? 0) / totalDividendIncome) * 100 : 0, 100)}%` }} />
+                          </div>
+                          <span>{formatPercent(totalDividendIncome ? ((holding.estimatedAnnualIncome ?? 0) / totalDividendIncome) * 100 : 0)}</span>
+                        </div>
+                      </td>
                       <td className="numeric-cell">{formatPercent(holding.distributionYield ?? holding.secYield ?? 0)}</td>
                       <td>{formatDate(holding.payDate)}</td>
                     </tr>

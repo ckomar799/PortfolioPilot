@@ -2,6 +2,8 @@ import type { Holding } from '../types/holding'
 import { formatCurrency, formatPercent, formatSignedNumber } from '../utils/format'
 
 export default function HoldingsTable({ holdings, totalMarketValue }: { holdings: Holding[]; totalMarketValue: number }) {
+  const sortedHoldings = holdings.slice().sort((a, b) => b.marketValue - a.marketValue)
+
   return (
     <div className="holdings-table-wrap">
       <table className="holdings-table-main compact-holdings-table">
@@ -19,7 +21,7 @@ export default function HoldingsTable({ holdings, totalMarketValue }: { holdings
           </tr>
         </thead>
         <tbody>
-          {holdings.map((holding) => {
+          {sortedHoldings.map((holding) => {
             const weight = totalMarketValue ? (holding.marketValue / totalMarketValue) * 100 : 0
             const returnPercent = holding.totalGainLossPercent ?? (holding.costBasis ? (holding.gainLoss / holding.costBasis) * 100 : 0)
 

@@ -27,7 +27,7 @@ export default function ImportPositionsCsvModal({ existingSnapshot, onConfirm, o
     const reader = new FileReader()
     reader.onload = () => {
       const text = typeof reader.result === 'string' ? reader.result : ''
-      setPreview(createPositionsImportPreview(text))
+      setPreview(createPositionsImportPreview(text, existingSnapshot))
     }
     reader.onerror = () => {
       setReadError('Could not read the selected positions CSV file.')
@@ -37,8 +37,16 @@ export default function ImportPositionsCsvModal({ existingSnapshot, onConfirm, o
 
   function confirmImport() {
     if (!preview || preview.snapshot.positions.length === 0) return
+    if (preview.mode === 'merge-dividends' && preview.matchedDividendRows === 0) return
     onConfirm(preview.snapshot)
   }
+
+  const isDividendMerge = preview?.mode === 'merge-dividends'
+  const canConfirm = preview
+    ? preview.mode === 'merge-dividends'
+      ? preview.snapshot.positions.length > 0 && preview.matchedDividendRows > 0
+      : preview.snapshot.positions.length > 0
+    : false
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onCancel}>
@@ -51,14 +59,20 @@ export default function ImportPositionsCsvModal({ existingSnapshot, onConfirm, o
           <button className="modal-close" type="button" onClick={onCancel} aria-label="Close positions import modal">x</button>
         </div>
 
-        {existingSnapshot && (
+        {existingSnapshot && !isDividendMerge && (
           <div className="import-warning">
             Confirming this import will replace the current positions snapshot from {new Date(existingSnapshot.importedAt).toLocaleString()}.
           </div>
         )}
 
+        {isDividendMerge && (
+          <div className="import-info">
+            This CSV looks like dividend position data. Confirming will merge dividend fields into matching tickers and preserve current values, quantities, cost basis, and gain/loss.
+          </div>
+        )}
+
         <label className="csv-upload-zone">
-          <span>Upload Fidelity positions CSV</span>
+          <span>Upload Fidelity positions or dividend CSV</span>
           <strong>{fileName || 'Choose positions CSV file'}</strong>
           <input type="file" accept=".csv,text/csv" onChange={handleFileChange} />
         </label>
@@ -68,18 +82,53 @@ export default function ImportPositionsCsvModal({ existingSnapshot, onConfirm, o
         {preview && (
           <>
             <div className="import-summary-grid">
-              <div><span>Imported positions</span><strong>{preview.snapshot.positions.length}</strong></div>
+              <div><span>Import action</span><strong>{isDividendMerge ? 'Merge' : 'Replace'}</strong></div>
+              <div><span>{isDividendMerge ? 'Matched tickers' : 'Imported positions'}</span><strong>{isDividendMerge ? preview.matchedDividendRows : preview.snapshot.positions.length}</strong></div>
               <div><span>Skipped rows</span><strong>{preview.skippedRows.length}</strong></div>
-              <div><span>Total portfolio value</span><strong>{formatCurrency(preview.totalPortfolioValue, { compact: true })}</strong></div>
-              <div><span>Source</span><strong>Positions CSV</strong></div>
+              <div><span>{isDividendMerge ? 'Unmatched tickers' : 'Total portfolio value'}</span><strong>{isDividendMerge ? preview.unmatchedDividendRows : formatCurrency(preview.totalPortfolioValue, { compact: true })}</strong></div>
             </div>
 
             <section className="import-preview-section">
               <div className="mini-section-heading">
-                <span>Current holdings preview</span>
-                <strong>{preview.snapshot.positions.length} positions</strong>
+                <span>{isDividendMerge ? 'Dividend merge preview' : 'Current holdings preview'}</span>
+                <strong>{isDividendMerge ? `${preview.matchedDividendRows} matched` : `${preview.snapshot.positions.length} positions`}</strong>
               </div>
-              {preview.snapshot.positions.length ? (
+              {isDividendMerge ? (
+                preview.dividendRows.length ? (
+                  <div className="import-preview-table-wrap">
+                    <table className="import-preview-table dividend-preview-table">
+                      <thead>
+                        <tr>
+                          <th>Status</th>
+                          <th>Ticker</th>
+                          <th>Security</th>
+                          <th>Est. Annual Income</th>
+                          <th>Dist. Yield</th>
+                          <th>SEC Yield</th>
+                          <th>Ex-Date</th>
+                          <th>Pay Date</th>
+                          <th>Amount / Share</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {preview.dividendRows.map((row) => (
+                          <tr key={`${row.rowNumber}-${row.ticker}`}>
+                            <td className={row.matched ? 'positive' : 'negative'}>{row.matched ? 'Matched' : 'Skipped'}</td>
+                            <td className="ticker-cell">{row.ticker}</td>
+                            <td>{row.securityName ?? '-'}</td>
+                            <td className="numeric-cell">{row.estimatedAnnualIncome === undefined ? '-' : formatCurrency(row.estimatedAnnualIncome)}</td>
+                            <td className="numeric-cell">{row.distributionYield === undefined ? '-' : formatPercent(row.distributionYield)}</td>
+                            <td className="numeric-cell">{row.secYield === undefined ? '-' : formatPercent(row.secYield)}</td>
+                            <td>{row.exDate ?? '-'}</td>
+                            <td>{row.payDate ?? '-'}</td>
+                            <td className="numeric-cell">{row.amountPerShare === undefined ? '-' : formatCurrency(row.amountPerShare)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : <div className="import-empty">No dividend rows found.</div>
+              ) : preview.snapshot.positions.length ? (
                 <div className="import-preview-table-wrap">
                   <table className="import-preview-table">
                     <thead>
@@ -134,8 +183,8 @@ export default function ImportPositionsCsvModal({ existingSnapshot, onConfirm, o
 
         <div className="modal-actions">
           <button className="btn ghost" type="button" onClick={onCancel}>Cancel</button>
-          <button className="btn primary" type="button" onClick={confirmImport} disabled={!preview || preview.snapshot.positions.length === 0}>
-            Confirm Positions Snapshot
+          <button className="btn primary" type="button" onClick={confirmImport} disabled={!canConfirm}>
+            {isDividendMerge ? 'Confirm Dividend Merge' : 'Confirm Positions Snapshot'}
           </button>
         </div>
       </div>
