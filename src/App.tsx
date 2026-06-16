@@ -2,48 +2,40 @@
 import './App.css'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
-import Transactions from './pages/Transactions'
-import Holdings from './pages/Holdings'
-import Dividends from './pages/Dividends'
-import Tools from './pages/Tools'
+import type { BankCashSettings } from './types/bankCash'
 import type { HysaSettings } from './types/hysa'
-import type { View } from './types/navigation'
-import type { Transaction } from './types/transaction'
+import type { PositionsSnapshot } from './types/position'
+import { loadBankCashSettings, saveBankCashSettings } from './utils/bankCashStorage'
 import { loadHysaSettings, saveHysaSettings } from './utils/hysaStorage'
-import { loadTransactions, saveTransactions } from './utils/transactionStorage'
+import { loadPositionsSnapshot, savePositionsSnapshot } from './utils/positionsStorage'
 
 function App() {
-  const [view, setView] = useState<View>('Dashboard')
-  const [transactions, setTransactions] = useState<Transaction[]>(loadTransactions)
   const [hysaSettings, setHysaSettings] = useState<HysaSettings>(loadHysaSettings)
-
-  useEffect(() => {
-    saveTransactions(transactions)
-  }, [transactions])
+  const [bankCashSettings, setBankCashSettings] = useState<BankCashSettings>(loadBankCashSettings)
+  const [positionsSnapshot, setPositionsSnapshot] = useState<PositionsSnapshot | undefined>(loadPositionsSnapshot)
 
   useEffect(() => {
     saveHysaSettings(hysaSettings)
   }, [hysaSettings])
 
-  function addTransaction(transaction: Transaction) {
-    setTransactions((current) => [transaction, ...current])
-  }
+  useEffect(() => {
+    saveBankCashSettings(bankCashSettings)
+  }, [bankCashSettings])
 
-  function updateTransaction(updatedTransaction: Transaction) {
-    setTransactions((current) => current.map((transaction) => (transaction.id === updatedTransaction.id ? updatedTransaction : transaction)))
-  }
-
-  function deleteTransaction(transactionId: string) {
-    setTransactions((current) => current.filter((transaction) => transaction.id !== transactionId))
-  }
+  useEffect(() => {
+    savePositionsSnapshot(positionsSnapshot)
+  }, [positionsSnapshot])
 
   return (
-    <Layout active={view} onChange={setView}>
-      {view === 'Dashboard' && <Dashboard transactions={transactions} hysaSettings={hysaSettings} onHysaSettingsChange={setHysaSettings} />}
-      {view === 'Transactions' && <Transactions transactions={transactions} onAdd={addTransaction} onUpdate={updateTransaction} onDelete={deleteTransaction} />}
-      {view === 'Holdings' && <Holdings transactions={transactions} />}
-      {view === 'Dividends' && <Dividends transactions={transactions} hysaSettings={hysaSettings} />}
-      {view === 'Tools' && <Tools />}
+    <Layout>
+      <Dashboard
+        positionsSnapshot={positionsSnapshot}
+        onPositionsSnapshotImport={setPositionsSnapshot}
+        hysaSettings={hysaSettings}
+        onHysaSettingsChange={setHysaSettings}
+        bankCashSettings={bankCashSettings}
+        onBankCashSettingsChange={setBankCashSettings}
+      />
     </Layout>
   )
 }

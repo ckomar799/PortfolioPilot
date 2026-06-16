@@ -3,7 +3,6 @@ import type { HysaSettings } from '../types/hysa'
 const STORAGE_KEY = 'portfolioPilot.hysaSettings.v1'
 
 export const defaultHysaSettings: HysaSettings = {
-  accountName: 'Emergency Fund HYSA',
   balance: 25000,
   apy: 4.35,
 }
@@ -12,7 +11,7 @@ function isHysaSettings(value: unknown): value is HysaSettings {
   if (!value || typeof value !== 'object') return false
   const settings = value as Partial<HysaSettings>
 
-  return typeof settings.accountName === 'string' && typeof settings.balance === 'number' && typeof settings.apy === 'number'
+  return typeof settings.balance === 'number' && typeof settings.apy === 'number'
 }
 
 export function loadHysaSettings(): HysaSettings {

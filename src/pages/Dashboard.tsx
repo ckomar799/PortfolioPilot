@@ -1,119 +1,259 @@
-import MetricCard from '../components/MetricCard'
-import { calculateHoldings } from '../utils/calcHoldings'
+import { useState } from 'react'
+import BankCashModal from '../components/BankCashModal'
 import Card from '../components/Card'
 import DonutChart from '../components/DonutChart'
-import LineChart from '../components/LineChart'
 import HoldingsTable from '../components/HoldingsTable'
-import ToolsGrid from '../components/ToolsGrid'
+import HysaModal from '../components/HysaModal'
+import ImportPositionsCsvModal from '../components/ImportPositionsCsvModal'
+import MetricCard from '../components/MetricCard'
+import type { BankCashSettings } from '../types/bankCash'
 import type { HysaSettings } from '../types/hysa'
+import type { PositionsSnapshot } from '../types/position'
 import { formatCurrency, formatPercent, formatSignedNumber } from '../utils/format'
-import { calculateHysaIncome, calculateTotalPassiveIncome } from '../utils/hysa'
-import type { Transaction } from '../types/transaction'
+import { calculateHysaIncome } from '../utils/hysa'
+import { positionsToDashboardData } from '../utils/portfolioSnapshot'
 
 type DashboardProps = {
-  transactions: Transaction[]
+  positionsSnapshot?: PositionsSnapshot
+  onPositionsSnapshotImport: (snapshot: PositionsSnapshot) => void
   hysaSettings: HysaSettings
   onHysaSettingsChange: (settings: HysaSettings) => void
+  bankCashSettings: BankCashSettings
+  onBankCashSettingsChange: (settings: BankCashSettings) => void
 }
 
-export default function Dashboard({ transactions, hysaSettings, onHysaSettingsChange }: DashboardProps) {
-  const { holdings, portfolio } = calculateHoldings(transactions)
-  const hysaIncome = calculateHysaIncome(hysaSettings)
-  const totalIncome = calculateTotalPassiveIncome(portfolio.annualDividends, hysaIncome)
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: '2-digit',
+  year: 'numeric',
+})
 
-  const sortedHoldings = holdings.slice().sort((a, b) => b.marketValue - a.marketValue)
-  const donutData = sortedHoldings.map((h) => ({ name: h.symbol, value: h.marketValue }))
-  const unrealizedReturn = portfolio.totalCostBasis ? (portfolio.totalGainLoss / portfolio.totalCostBasis) * 100 : 0
-  const cashReserve = Math.round(portfolio.totalMarketValue * 0.035)
-  const buyingPower = Math.round(cashReserve * 0.72)
-  const dayChange = Math.round(portfolio.totalMarketValue * 0.0084)
-  const dividendGrowthAssumption = 6
-  const monthlyDividendIncome = portfolio.annualDividends / 12
-  const weeklyDividendIncome = portfolio.annualDividends / 52
-  const dailyDividendIncome = portfolio.annualDividends / 365
-  const hourlyDividendIncome = dailyDividendIncome / 24
-  const minuteDividendIncome = hourlyDividendIncome / 60
-  const estimatedDividendsToday = dailyDividendIncome
-  const yieldOnCost = portfolio.totalCostBasis ? (portfolio.annualDividends / portfolio.totalCostBasis) * 100 : 0
-  const fiveYearDividendIncome = Math.round(portfolio.annualDividends * Math.pow(1 + dividendGrowthAssumption / 100, 5))
-  const tenYearDividendIncome = Math.round(portfolio.annualDividends * Math.pow(1 + dividendGrowthAssumption / 100, 10))
-  const incomeByHolding = sortedHoldings
-    .filter((h) => h.annualDividends > 0)
-    .map((h) => ({
-      symbol: h.symbol,
-      income: h.annualDividends,
-      share: portfolio.annualDividends ? (h.annualDividends / portfolio.annualDividends) * 100 : 0,
-    }))
+function formatDate(date?: string) {
+  if (!date) return 'Not available'
+  const parsed = new Date(`${date}T00:00:00`)
+  return Number.isNaN(parsed.getTime()) ? date : dateFormatter.format(parsed)
+}
 
-  function updateHysaField(field: keyof HysaSettings, value: string) {
-    onHysaSettingsChange({
-      ...hysaSettings,
-      [field]: field === 'accountName' ? value : Number(value) || 0,
-    })
+export default function Dashboard({
+  positionsSnapshot,
+  onPositionsSnapshotImport,
+  hysaSettings,
+  onHysaSettingsChange,
+  bankCashSettings,
+  onBankCashSettingsChange,
+}: DashboardProps) {
+  const [isPositionsImportOpen, setIsPositionsImportOpen] = useState(false)
+  const [isHysaModalOpen, setIsHysaModalOpen] = useState(false)
+  const [isBankCashModalOpen, setIsBankCashModalOpen] = useState(false)
+  const snapshotData = positionsSnapshot ? positionsToDashboardData(positionsSnapshot) : undefined
+  const holdings = snapshotData?.holdings ?? []
+  const portfolio = snapshotData?.portfolio ?? {
+    totalMarketValue: 0,
+    totalCostBasis: 0,
+    totalGainLoss: 0,
+    annualDividends: 0,
+    yield: 0,
   }
+  const hysaIncome = calculateHysaIncome(hysaSettings)
+  const netWorth = portfolio.totalMarketValue + hysaSettings.balance + bankCashSettings.balance
+  const dividendIncome = portfolio.annualDividends
+  const passiveIncome = dividendIncome + hysaIncome.annualInterest
+  const unrealizedReturn = portfolio.totalCostBasis ? (portfolio.totalGainLoss / portfolio.totalCostBasis) * 100 : 0
+  const dayChange = positionsSnapshot?.positions.reduce((sum, position) => sum + (position.todaysGainLossDollar ?? 0), 0) ?? 0
+  const donutData = holdings.slice().sort((a, b) => b.marketValue - a.marketValue).map((holding) => ({ name: holding.symbol, value: holding.marketValue }))
+  const incomeByHolding = holdings
+    .filter((holding) => (holding.estimatedAnnualIncome ?? 0) > 0)
+    .sort((a, b) => (b.estimatedAnnualIncome ?? 0) - (a.estimatedAnnualIncome ?? 0))
+  const gainLossPositions = positionsSnapshot?.positions.filter((position) => position.totalGainLossDollar !== undefined && position.totalGainLossDollar !== 0) ?? []
+  const hasGainLossLeaders = gainLossPositions.length > 0
+  const topGainers = gainLossPositions.slice().sort((a, b) => (b.totalGainLossDollar ?? 0) - (a.totalGainLossDollar ?? 0)).slice(0, 3)
+  const topLosers = gainLossPositions.slice().sort((a, b) => (a.totalGainLossDollar ?? 0) - (b.totalGainLossDollar ?? 0)).slice(0, 3)
+  const fullNetWorthAllocation = [
+    ...(snapshotData?.accountAllocation.map((account) => ({
+      ...account,
+      share: netWorth ? (account.value / netWorth) * 100 : 0,
+    })) ?? []),
+    { accountName: 'HYSA', value: hysaSettings.balance, share: netWorth ? (hysaSettings.balance / netWorth) * 100 : 0 },
+    { accountName: 'Checking / Bank Cash', value: bankCashSettings.balance, share: netWorth ? (bankCashSettings.balance / netWorth) * 100 : 0 },
+  ].filter((item) => item.value > 0)
 
-  const lineData = [
-    ['Jan 03', 0.91],
-    ['Jan 19', 0.935],
-    ['Feb 02', 0.922],
-    ['Feb 16', 0.958],
-    ['Mar 01', 0.947],
-    ['Mar 15', 0.982],
-    ['Apr 01', 0.971],
-    ['Apr 18', 1.006],
-    ['May 03', 1.021],
-    ['May 17', 1.012],
-    ['Jun 03', 1.038],
-    ['Jun 14', 1],
-  ].map(([date, multiplier]) => ({ date: String(date), value: Math.round(portfolio.totalMarketValue * Number(multiplier)) }))
+  function confirmPositionsImport(snapshot: PositionsSnapshot) {
+    onPositionsSnapshotImport(snapshot)
+    setIsPositionsImportOpen(false)
+  }
 
   return (
     <div className="dashboard-grid">
       <div className="dashboard-header">
         <div>
-          <div className="eyebrow">Portfolio Command Center</div>
-          <h1>Investment Dashboard</h1>
-          <p className="muted">Consolidated view across taxable brokerage, retirement, and dividend income accounts.</p>
+          <div className="eyebrow">Net Worth Dashboard</div>
+          <h1>PortfolioPilot</h1>
         </div>
-        <div className="header-context">
-          <div>
-            <span>As of</span>
-            <strong>Jun 16, 2026 3:55 AM ET</strong>
-          </div>
-          <div>
-            <span>Data quality</span>
-            <strong>3 positions reconciled</strong>
-          </div>
+        <div className="dashboard-actions">
+          <button className="btn primary import-primary-btn" type="button" onClick={() => setIsPositionsImportOpen(true)}>Import Positions CSV</button>
+          <button className="btn" type="button" onClick={() => setIsHysaModalOpen(true)}>Update HYSA</button>
+          <button className="btn" type="button" onClick={() => setIsBankCashModalOpen(true)}>Update Bank Cash</button>
         </div>
+      </div>
+
+      <div className="net-worth-hero">
+        <div className="net-worth-main">
+          <span>Total Net Worth</span>
+          <strong>{formatCurrency(netWorth, { compact: true })}</strong>
+          <em>Investment Portfolio + HYSA + Checking / Bank Cash</em>
+        </div>
+        <div className="net-worth-formula">
+          <span>{formatCurrency(portfolio.totalMarketValue, { compact: true })} investments</span>
+          <span>{formatCurrency(hysaSettings.balance, { compact: true })} HYSA</span>
+          <span>{formatCurrency(bankCashSettings.balance, { compact: true })} bank cash</span>
+        </div>
+      </div>
+
+      <div className="source-pill-row compact-source-row">
+        <span className="source-pill">{positionsSnapshot ? `Positions CSV imported ${new Date(positionsSnapshot.importedAt).toLocaleString()}` : 'Import positions CSV to populate investments'}</span>
+        <span className="source-pill muted-source">HYSA and bank cash are manual</span>
       </div>
 
       <div className="metrics-row">
-        <MetricCard title="Portfolio Value" value={formatCurrency(portfolio.totalMarketValue, { compact: true })} sub={`${formatSignedNumber(dayChange, { currency: true })} intraday move`} trend="+0.84%" positive />
-        <MetricCard title="Net Invested" value={formatCurrency(portfolio.totalCostBasis, { compact: true })} sub="Average cost basis across open lots" trend="0.00%" />
-        <MetricCard title="Unrealized P/L" value={formatSignedNumber(portfolio.totalGainLoss, { currency: true })} sub={`${formatPercent(unrealizedReturn)} total return`} trend="+1.18%" positive={portfolio.totalGainLoss >= 0} />
-        <MetricCard title="Forward Income" value={formatCurrency(portfolio.annualDividends, { compact: true })} sub={`${formatPercent(portfolio.yield)} portfolio yield`} trend="+0.12%" positive />
-        <MetricCard title="Cash Buffer" value={formatCurrency(cashReserve, { compact: true })} sub={`${formatCurrency(buyingPower, { compact: true })} available to deploy`} trend="3.5%" />
+        <MetricCard title="Investment Portfolio" value={formatCurrency(portfolio.totalMarketValue, { compact: true })} sub={positionsSnapshot ? 'From Fidelity positions CSV' : 'Import positions CSV to populate'} trend="Current" positive />
+        <MetricCard title="HYSA Balance" value={formatCurrency(hysaSettings.balance, { compact: true })} sub={`${formatPercent(hysaSettings.apy)} APY, daily compounding estimate`} trend={formatCurrency(hysaIncome.annualInterest, { compact: true })} positive />
+        <MetricCard title="Checking / Bank Cash" value={formatCurrency(bankCashSettings.balance, { compact: true })} sub={bankCashSettings.notes || 'Manual cash balance'} trend="Manual" />
+        <MetricCard title="Unrealized P/L" value={formatSignedNumber(portfolio.totalGainLoss, { currency: true })} sub={`${formatPercent(unrealizedReturn)} total return`} trend={formatSignedNumber(dayChange, { currency: true })} positive={portfolio.totalGainLoss >= 0} />
+        <MetricCard title="Passive Income" value={formatCurrency(passiveIncome, { compact: true })} sub="Dividends from CSV + HYSA interest" trend={formatCurrency(dividendIncome, { compact: true })} positive />
       </div>
 
-      <div className="dashboard-main">
-        <Card className="card-line performance-panel">
+      <div className={hasGainLossLeaders ? 'snapshot-overview-grid' : 'snapshot-overview-grid no-leaders'}>
+        <Card className="card-allocation">
           <div className="chart-header">
             <div>
-              <h3>Portfolio Performance</h3>
-              <p className="panel-subtitle">YTD market value, including deposits, distributions, and unrealized appreciation.</p>
-            </div>
-            <div className="chart-controls">
-              <span className="active">YTD</span>
-              <span>1Y</span>
-              <span>3Y</span>
+              <h3>Allocation by Holding</h3>
+              <p className="panel-subtitle">Current investment holdings from Fidelity positions CSV.</p>
             </div>
           </div>
-          <LineChart data={lineData} />
-          <div className="performance-stats">
-            <div><span>Start Value</span><strong>{formatCurrency(lineData[0].value, { compact: true })}</strong></div>
-            <div><span>Peak Value</span><strong>{formatCurrency(Math.max(...lineData.map((d) => d.value)), { compact: true })}</strong></div>
-            <div><span>Volatility</span><strong>Moderate</strong></div>
-            <div><span>Benchmark Gap</span><strong className="positive">+1.9%</strong></div>
+          {holdings.length ? <DonutChart data={donutData} total={portfolio.totalMarketValue} /> : <div className="source-empty">Import a Fidelity positions CSV to see holding allocation.</div>}
+        </Card>
+
+        <Card className="snapshot-panel">
+          <div className="chart-header">
+            <div>
+              <h3>Net Worth Allocation</h3>
+              <p className="panel-subtitle">Investment accounts, HYSA, and Checking / Bank Cash.</p>
+            </div>
+          </div>
+          <div className="account-allocation-list">
+            {fullNetWorthAllocation.map((account) => (
+              <div key={account.accountName}>
+                <span>{account.accountName}</span>
+                <div className="income-holding-bar"><i style={{ width: `${Math.min(account.share, 100)}%` }} /></div>
+                <strong>{formatCurrency(account.value, { compact: true })} <em>{formatPercent(account.share)}</em></strong>
+              </div>
+            ))}
+            {!fullNetWorthAllocation.length && <div className="source-empty">Import positions or update cash balances to see net worth allocation.</div>}
+          </div>
+        </Card>
+
+        {hasGainLossLeaders && (
+          <Card className="snapshot-panel">
+            <div className="chart-header">
+              <div>
+                <h3>Gain / Loss Leaders</h3>
+                <p className="panel-subtitle">Current total gain/loss from positions snapshot.</p>
+              </div>
+            </div>
+            <div className="snapshot-lists">
+              <div>
+                <span>Top gainers</span>
+                {topGainers.map((position) => (
+                  <strong key={position.id}>{position.ticker} {formatSignedNumber(position.totalGainLossDollar ?? 0, { currency: true })}</strong>
+                ))}
+              </div>
+              <div>
+                <span>Top losers</span>
+                {topLosers.map((position) => (
+                  <strong key={position.id}>{position.ticker} {formatSignedNumber(position.totalGainLossDollar ?? 0, { currency: true })}</strong>
+                ))}
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      <Card className="passive-income-card">
+        <div className="chart-header">
+          <div>
+            <div className="eyebrow">Passive Income</div>
+            <h3>Total Passive Income</h3>
+            <p className="panel-subtitle">Estimated annual dividends from positions CSV plus HYSA annual interest.</p>
+          </div>
+        </div>
+        <div className="passive-income-total">
+          <span>Total annual passive income</span>
+          <strong>{formatCurrency(passiveIncome, { compact: true })}</strong>
+        </div>
+        <div className="passive-income-grid">
+          <div><span>Annual dividends</span><strong>{formatCurrency(dividendIncome, { compact: true })}</strong></div>
+          <div><span>Annual HYSA interest</span><strong>{formatCurrency(hysaIncome.annualInterest, { compact: true })}</strong></div>
+          <div><span>Monthly passive income</span><strong>{formatCurrency(passiveIncome / 12)}</strong></div>
+          <div><span>Daily passive income</span><strong>{formatCurrency(passiveIncome / 365)}</strong></div>
+          <div><span>Hourly passive income</span><strong>{formatCurrency(passiveIncome / 365 / 24)}</strong></div>
+          <div><span>Per minute</span><strong>{formatCurrency(passiveIncome / 365 / 24 / 60)}</strong></div>
+        </div>
+      </Card>
+
+      <div className="cash-and-income-grid">
+        <Card className="cash-income-module">
+          <div className="chart-header">
+            <div>
+              <div className="eyebrow">Manual Cash</div>
+              <h3>HYSA Interest</h3>
+              <p className="panel-subtitle">Manual HYSA balance and APY. Daily compounding estimate.</p>
+            </div>
+          </div>
+          <div className="hysa-income-grid">
+            <div><span>HYSA balance</span><strong>{formatCurrency(hysaSettings.balance, { compact: true })}</strong></div>
+            <div><span>APY</span><strong>{formatPercent(hysaSettings.apy)}</strong></div>
+            <div><span>Annual interest</span><strong>{formatCurrency(hysaIncome.annualInterest, { compact: true })}</strong></div>
+            <div><span>Monthly</span><strong>{formatCurrency(hysaIncome.monthlyInterest)}</strong></div>
+            <div><span>Daily</span><strong>{formatCurrency(hysaIncome.dailyInterest)}</strong></div>
+            <div><span>Per minute</span><strong>{formatCurrency(hysaIncome.minuteInterest)}</strong></div>
+          </div>
+        </Card>
+
+        <Card className="snapshot-panel">
+          <div className="chart-header">
+            <div>
+              <div className="eyebrow">Dividends</div>
+              <h3>Income by Holding</h3>
+              <p className="panel-subtitle">Only holdings with Est. annual income greater than zero.</p>
+            </div>
+          </div>
+          <div className="income-table-wrap">
+            {incomeByHolding.length ? (
+              <table className="income-table">
+                <thead>
+                  <tr>
+                    <th>Ticker</th>
+                    <th>Name</th>
+                    <th>Est. Annual Income</th>
+                    <th>Yield</th>
+                    <th>Pay Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {incomeByHolding.map((holding) => (
+                    <tr key={`${holding.symbol}-income`}>
+                      <td className="ticker-cell">{holding.symbol}</td>
+                      <td>{holding.securityName ?? holding.symbol}</td>
+                      <td className="numeric-cell">{formatCurrency(holding.estimatedAnnualIncome ?? 0)}</td>
+                      <td className="numeric-cell">{formatPercent(holding.distributionYield ?? holding.secYield ?? 0)}</td>
+                      <td>{formatDate(holding.payDate)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="source-empty">No dividend income found in the imported positions CSV.</div>
+            )}
           </div>
         </Card>
       </div>
@@ -121,172 +261,19 @@ export default function Dashboard({ transactions, hysaSettings, onHysaSettingsCh
       <Card className="card-holdings holdings-panel">
         <div className="chart-header holdings-title-row">
           <div>
-            <h3>Holdings Detail</h3>
-            <p className="panel-subtitle">Open positions with cost basis, yield, allocation weight, and unrealized return.</p>
+            <h3>Current Holdings</h3>
+            <p className="panel-subtitle">Holdings, value, cost basis, and gain/loss from Fidelity positions CSV.</p>
           </div>
           <div className="table-actions">
             <span>{holdings.length} securities</span>
-            <button className="btn small">+ Add Position</button>
           </div>
         </div>
-        <HoldingsTable holdings={sortedHoldings} totalMarketValue={portfolio.totalMarketValue} />
+        {holdings.length ? <HoldingsTable holdings={holdings} totalMarketValue={portfolio.totalMarketValue} /> : <div className="source-empty">Import a Fidelity positions CSV to populate current holdings.</div>}
       </Card>
 
-      <Card className="dividend-intelligence">
-        <div className="dividend-intelligence-header">
-          <div>
-            <div className="eyebrow">Dividend Growth Tracking</div>
-            <h3>Dividend Intelligence</h3>
-            <p className="panel-subtitle">Income planning view based on current annual dividends. Projection figures use a clearly labeled mock growth assumption for now.</p>
-          </div>
-          <div className="dividend-status">
-            <span>DRIP status</span>
-            <strong>Enabled for eligible holdings</strong>
-            <em>Mock status until account settings exist</em>
-          </div>
-        </div>
-
-        <div className="dividend-intelligence-grid">
-          <div className="income-rate-card">
-            <div className="rate-card-header">
-              <span>Dividend Income Rate</span>
-              <strong>{formatCurrency(portfolio.annualDividends, { compact: true })}/yr</strong>
-            </div>
-            <div className="rate-grid">
-              <div>
-                <span>Per month</span>
-                <strong>{formatCurrency(monthlyDividendIncome)}</strong>
-              </div>
-              <div>
-                <span>Per week</span>
-                <strong>{formatCurrency(weeklyDividendIncome)}</strong>
-              </div>
-              <div>
-                <span>Per day</span>
-                <strong>{formatCurrency(dailyDividendIncome)}</strong>
-              </div>
-              <div>
-                <span>Per hour</span>
-                <strong>{formatCurrency(hourlyDividendIncome)}</strong>
-              </div>
-              <div>
-                <span>Per minute</span>
-                <strong>{formatCurrency(minuteDividendIncome)}</strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="dividend-kpi-grid">
-            <div><span>Current annual income</span><strong>{formatCurrency(portfolio.annualDividends, { compact: true })}</strong></div>
-            <div><span>Estimated earned today</span><strong>{formatCurrency(estimatedDividendsToday)}</strong></div>
-            <div><span>Portfolio yield</span><strong>{formatPercent(portfolio.yield)}</strong></div>
-            <div><span>Yield on cost</span><strong>{formatPercent(yieldOnCost)}</strong></div>
-            <div><span>Growth assumption</span><strong>{formatPercent(dividendGrowthAssumption)}</strong><em>Mock projection input</em></div>
-            <div><span>5-year income estimate</span><strong>{formatCurrency(fiveYearDividendIncome, { compact: true })}</strong><em>Projected/mock</em></div>
-            <div><span>10-year income estimate</span><strong>{formatCurrency(tenYearDividendIncome, { compact: true })}</strong><em>Projected/mock</em></div>
-            <div><span>Next dividend review</span><strong>Jul 01, 2026</strong></div>
-          </div>
-
-          <div className="income-by-holding">
-            <div className="mini-section-heading">
-              <span>Income by holding</span>
-              <strong>{incomeByHolding.length} payers</strong>
-            </div>
-            <div className="income-holding-list">
-              {incomeByHolding.map((h) => (
-                <div key={h.symbol}>
-                  <span>{h.symbol}</span>
-                  <div className="income-holding-bar"><i style={{ width: `${Math.min(h.share, 100)}%` }} /></div>
-                  <strong>{formatCurrency(h.income)} <em>{formatPercent(h.share)}</em></strong>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <div className="income-modules-grid">
-        <Card className="cash-income-module">
-          <div className="chart-header">
-            <div>
-              <div className="eyebrow">Cash Yield</div>
-              <h3>Cash & HYSA Income</h3>
-              <p className="panel-subtitle">Estimated interest from high-yield savings settings stored locally.</p>
-            </div>
-            <div className="small-muted">daily compounding estimate</div>
-          </div>
-
-          <div className="hysa-settings-grid">
-            <label>
-              <span>HYSA account</span>
-              <input value={hysaSettings.accountName} onChange={(event) => updateHysaField('accountName', event.target.value)} />
-            </label>
-            <label>
-              <span>Balance</span>
-              <input type="number" min="0" step="any" value={hysaSettings.balance} onChange={(event) => updateHysaField('balance', event.target.value)} />
-            </label>
-            <label>
-              <span>APY</span>
-              <input type="number" min="0" step="any" value={hysaSettings.apy} onChange={(event) => updateHysaField('apy', event.target.value)} />
-            </label>
-          </div>
-
-          <div className="hysa-income-grid">
-            <div><span>Annual interest</span><strong>{formatCurrency(hysaIncome.annualInterest, { compact: true })}</strong></div>
-            <div><span>Monthly</span><strong>{formatCurrency(hysaIncome.monthlyInterest)}</strong></div>
-            <div><span>Weekly</span><strong>{formatCurrency(hysaIncome.weeklyInterest)}</strong></div>
-            <div><span>Daily</span><strong>{formatCurrency(hysaIncome.dailyInterest)}</strong></div>
-            <div><span>Hourly</span><strong>{formatCurrency(hysaIncome.hourlyInterest)}</strong></div>
-            <div><span>Per minute</span><strong>{formatCurrency(hysaIncome.minuteInterest)}</strong></div>
-          </div>
-        </Card>
-
-        <Card className="total-income-module">
-          <div className="chart-header">
-            <div>
-              <div className="eyebrow">Passive Income</div>
-              <h3>Total Income</h3>
-              <p className="panel-subtitle">Combined forward dividends and estimated HYSA interest.</p>
-            </div>
-          </div>
-
-          <div className="total-income-hero">
-            <span>Total annual passive income</span>
-            <strong>{formatCurrency(totalIncome.annualTotal, { compact: true })}</strong>
-          </div>
-
-          <div className="total-income-grid">
-            <div><span>Forward dividends</span><strong>{formatCurrency(totalIncome.annualDividends, { compact: true })}</strong></div>
-            <div><span>HYSA interest</span><strong>{formatCurrency(totalIncome.annualHysaInterest, { compact: true })}</strong></div>
-            <div><span>Monthly total</span><strong>{formatCurrency(totalIncome.monthlyTotal)}</strong></div>
-            <div><span>Daily total</span><strong>{formatCurrency(totalIncome.dailyTotal)}</strong></div>
-            <div><span>Hourly total</span><strong>{formatCurrency(totalIncome.hourlyTotal)}</strong></div>
-            <div><span>Per minute</span><strong>{formatCurrency(totalIncome.minuteTotal)}</strong></div>
-          </div>
-        </Card>
-      </div>
-
-      <div className="secondary-grid">
-        <Card className="card-allocation">
-          <div className="chart-header">
-            <div>
-              <h3>Allocation</h3>
-              <p className="panel-subtitle">Position weights by current market value.</p>
-            </div>
-          </div>
-          <DonutChart data={donutData} total={portfolio.totalMarketValue} />
-        </Card>
-
-        <Card className="card-tools">
-          <div className="chart-header">
-            <div>
-              <h3>Tools & Calculators</h3>
-              <p className="panel-subtitle">Quick actions for contribution planning, income checks, and allocation work.</p>
-            </div>
-          </div>
-          <ToolsGrid />
-        </Card>
-      </div>
+      {isPositionsImportOpen && <ImportPositionsCsvModal existingSnapshot={positionsSnapshot} onConfirm={confirmPositionsImport} onCancel={() => setIsPositionsImportOpen(false)} />}
+      {isHysaModalOpen && <HysaModal settings={hysaSettings} onSave={(settings) => { onHysaSettingsChange(settings); setIsHysaModalOpen(false) }} onCancel={() => setIsHysaModalOpen(false)} />}
+      {isBankCashModalOpen && <BankCashModal settings={bankCashSettings} onSave={(settings) => { onBankCashSettingsChange(settings); setIsBankCashModalOpen(false) }} onCancel={() => setIsBankCashModalOpen(false)} />}
     </div>
   )
 }

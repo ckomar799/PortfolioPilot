@@ -1,4 +1,4 @@
-import type { HysaIncomeMetrics, HysaSettings, TotalPassiveIncomeMetrics } from '../types/hysa'
+import type { HysaIncomeMetrics, HysaSettings } from '../types/hysa'
 
 function roundCurrency(value: number) {
   return Math.round(value * 100) / 100
@@ -17,19 +17,5 @@ export function calculateHysaIncome(settings: HysaSettings): HysaIncomeMetrics {
     dailyInterest: roundCurrency(rawDailyInterest),
     hourlyInterest: roundCurrency(rawDailyInterest / 24),
     minuteInterest: roundCurrency(rawDailyInterest / 24 / 60),
-  }
-}
-
-export function calculateTotalPassiveIncome(annualDividends: number, hysaIncome: HysaIncomeMetrics): TotalPassiveIncomeMetrics {
-  const annualTotal = roundCurrency(annualDividends + hysaIncome.annualInterest)
-
-  return {
-    annualDividends: roundCurrency(annualDividends),
-    annualHysaInterest: hysaIncome.annualInterest,
-    annualTotal,
-    monthlyTotal: roundCurrency(annualTotal / 12),
-    dailyTotal: roundCurrency(annualTotal / 365),
-    hourlyTotal: roundCurrency(annualTotal / 365 / 24),
-    minuteTotal: roundCurrency(annualTotal / 365 / 24 / 60),
   }
 }
