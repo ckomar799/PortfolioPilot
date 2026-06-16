@@ -1,25 +1,32 @@
 import MetricCard from '../components/MetricCard'
-import { transactions } from '../data/transactions'
 import { calculateHoldings } from '../utils/calcHoldings'
 import Card from '../components/Card'
 import DonutChart from '../components/DonutChart'
 import LineChart from '../components/LineChart'
 import HoldingsTable from '../components/HoldingsTable'
-import DividendProjection from '../components/DividendProjection'
 import ToolsGrid from '../components/ToolsGrid'
+import type { HysaSettings } from '../types/hysa'
 import { formatCurrency, formatPercent, formatSignedNumber } from '../utils/format'
+import { calculateHysaIncome, calculateTotalPassiveIncome } from '../utils/hysa'
+import type { Transaction } from '../types/transaction'
 
-export default function Dashboard() {
+type DashboardProps = {
+  transactions: Transaction[]
+  hysaSettings: HysaSettings
+  onHysaSettingsChange: (settings: HysaSettings) => void
+}
+
+export default function Dashboard({ transactions, hysaSettings, onHysaSettingsChange }: DashboardProps) {
   const { holdings, portfolio } = calculateHoldings(transactions)
+  const hysaIncome = calculateHysaIncome(hysaSettings)
+  const totalIncome = calculateTotalPassiveIncome(portfolio.annualDividends, hysaIncome)
 
   const sortedHoldings = holdings.slice().sort((a, b) => b.marketValue - a.marketValue)
   const donutData = sortedHoldings.map((h) => ({ name: h.symbol, value: h.marketValue }))
-  const topHolding = sortedHoldings[0]
   const unrealizedReturn = portfolio.totalCostBasis ? (portfolio.totalGainLoss / portfolio.totalCostBasis) * 100 : 0
   const cashReserve = Math.round(portfolio.totalMarketValue * 0.035)
   const buyingPower = Math.round(cashReserve * 0.72)
   const dayChange = Math.round(portfolio.totalMarketValue * 0.0084)
-  const incomeCoverage = portfolio.annualDividends ? Math.round((portfolio.annualDividends / 12000) * 100) : 0
   const dividendGrowthAssumption = 6
   const monthlyDividendIncome = portfolio.annualDividends / 12
   const weeklyDividendIncome = portfolio.annualDividends / 52
@@ -37,6 +44,13 @@ export default function Dashboard() {
       income: h.annualDividends,
       share: portfolio.annualDividends ? (h.annualDividends / portfolio.annualDividends) * 100 : 0,
     }))
+
+  function updateHysaField(field: keyof HysaSettings, value: string) {
+    onHysaSettingsChange({
+      ...hysaSettings,
+      [field]: field === 'accountName' ? value : Number(value) || 0,
+    })
+  }
 
   const lineData = [
     ['Jan 03', 0.91],
@@ -191,51 +205,76 @@ export default function Dashboard() {
         </div>
       </Card>
 
-      <div className="secondary-grid">
-        <div className="insight-stack">
-          <Card className="card-allocation">
-            <div className="chart-header">
-              <div>
-                <h3>Allocation</h3>
-                <p className="panel-subtitle">Position weights by current market value.</p>
-              </div>
-            </div>
-            <DonutChart data={donutData} total={portfolio.totalMarketValue} />
-          </Card>
-
-          <Card className="card-health">
-            <h3>Portfolio Diagnostics</h3>
-            <div className="diagnostic-list">
-              <div><span>Largest position</span><strong>{topHolding?.symbol ?? 'N/A'} - {topHolding ? formatPercent((topHolding.marketValue / portfolio.totalMarketValue) * 100) : '0.00%'}</strong></div>
-              <div><span>Income coverage</span><strong>{incomeCoverage}% of annual target</strong></div>
-              <div><span>Concentration risk</span><strong>Watch list</strong></div>
-              <div><span>Rebalance trigger</span><strong>None within 5%</strong></div>
-            </div>
-          </Card>
-        </div>
-
-        <Card className="card-dividend">
+      <div className="income-modules-grid">
+        <Card className="cash-income-module">
           <div className="chart-header">
             <div>
-              <h3>Dividend Projection</h3>
-              <p className="panel-subtitle">Forward income modeled with the mock {formatPercent(dividendGrowthAssumption)} dividend growth assumption.</p>
+              <div className="eyebrow">Cash Yield</div>
+              <h3>Cash & HYSA Income</h3>
+              <p className="panel-subtitle">Estimated interest from high-yield savings settings stored locally.</p>
             </div>
-            <div className="small-muted">10Y</div>
+            <div className="small-muted">daily compounding estimate</div>
           </div>
-            <div className="dividend-card-content">
-              <div className="dividend-summary">
-                <div className="muted">Current Annual Dividends</div>
-                <div className="dividend-summary-value">{formatCurrency(portfolio.annualDividends, { compact: true })}</div>
-                <div className="income-meta">
-                  <span>Monthly avg {formatCurrency(portfolio.annualDividends / 12)}</span>
-                  <span>Target coverage {incomeCoverage}%</span>
-                  <span>Next review Jul 01, 2026</span>
-                </div>
-              </div>
-              <div className="dividend-chart">
-                <DividendProjection current={portfolio.annualDividends} years={10} />
-              </div>
+
+          <div className="hysa-settings-grid">
+            <label>
+              <span>HYSA account</span>
+              <input value={hysaSettings.accountName} onChange={(event) => updateHysaField('accountName', event.target.value)} />
+            </label>
+            <label>
+              <span>Balance</span>
+              <input type="number" min="0" step="any" value={hysaSettings.balance} onChange={(event) => updateHysaField('balance', event.target.value)} />
+            </label>
+            <label>
+              <span>APY</span>
+              <input type="number" min="0" step="any" value={hysaSettings.apy} onChange={(event) => updateHysaField('apy', event.target.value)} />
+            </label>
+          </div>
+
+          <div className="hysa-income-grid">
+            <div><span>Annual interest</span><strong>{formatCurrency(hysaIncome.annualInterest, { compact: true })}</strong></div>
+            <div><span>Monthly</span><strong>{formatCurrency(hysaIncome.monthlyInterest)}</strong></div>
+            <div><span>Weekly</span><strong>{formatCurrency(hysaIncome.weeklyInterest)}</strong></div>
+            <div><span>Daily</span><strong>{formatCurrency(hysaIncome.dailyInterest)}</strong></div>
+            <div><span>Hourly</span><strong>{formatCurrency(hysaIncome.hourlyInterest)}</strong></div>
+            <div><span>Per minute</span><strong>{formatCurrency(hysaIncome.minuteInterest)}</strong></div>
+          </div>
+        </Card>
+
+        <Card className="total-income-module">
+          <div className="chart-header">
+            <div>
+              <div className="eyebrow">Passive Income</div>
+              <h3>Total Income</h3>
+              <p className="panel-subtitle">Combined forward dividends and estimated HYSA interest.</p>
             </div>
+          </div>
+
+          <div className="total-income-hero">
+            <span>Total annual passive income</span>
+            <strong>{formatCurrency(totalIncome.annualTotal, { compact: true })}</strong>
+          </div>
+
+          <div className="total-income-grid">
+            <div><span>Forward dividends</span><strong>{formatCurrency(totalIncome.annualDividends, { compact: true })}</strong></div>
+            <div><span>HYSA interest</span><strong>{formatCurrency(totalIncome.annualHysaInterest, { compact: true })}</strong></div>
+            <div><span>Monthly total</span><strong>{formatCurrency(totalIncome.monthlyTotal)}</strong></div>
+            <div><span>Daily total</span><strong>{formatCurrency(totalIncome.dailyTotal)}</strong></div>
+            <div><span>Hourly total</span><strong>{formatCurrency(totalIncome.hourlyTotal)}</strong></div>
+            <div><span>Per minute</span><strong>{formatCurrency(totalIncome.minuteTotal)}</strong></div>
+          </div>
+        </Card>
+      </div>
+
+      <div className="secondary-grid">
+        <Card className="card-allocation">
+          <div className="chart-header">
+            <div>
+              <h3>Allocation</h3>
+              <p className="panel-subtitle">Position weights by current market value.</p>
+            </div>
+          </div>
+          <DonutChart data={donutData} total={portfolio.totalMarketValue} />
         </Card>
 
         <Card className="card-tools">

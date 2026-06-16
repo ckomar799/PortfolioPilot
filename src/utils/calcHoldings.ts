@@ -1,4 +1,4 @@
-import type { Transaction } from '../data/transactions'
+import type { Transaction } from '../types/transaction'
 
 export type Holding = {
   symbol: string
@@ -33,20 +33,22 @@ export function calculateHoldings(transactions: Transaction[]) {
   const txs = transactions.slice().sort((a, b) => a.date.localeCompare(b.date))
 
   for (const t of txs) {
-    const s = t.symbol
+    const s = t.ticker?.toUpperCase()
+    if (!s) continue
+
     if (!bySymbol[s]) bySymbol[s] = { quantity: 0, totalCost: 0, annualDividends: 0 }
 
-    if (t.type === 'buy' && t.quantity && t.price) {
-      bySymbol[s].totalCost += t.quantity * t.price
-      bySymbol[s].quantity += t.quantity
+    if (t.type === 'buy' && t.shares && t.price) {
+      bySymbol[s].totalCost += t.shares * t.price
+      bySymbol[s].quantity += t.shares
       bySymbol[s].lastPrice = t.price
     }
 
-    if (t.type === 'sell' && t.quantity && t.price) {
+    if (t.type === 'sell' && t.shares && t.price) {
       // average cost method
       const beforeQty = bySymbol[s].quantity
       const avgCost = beforeQty > 0 ? bySymbol[s].totalCost / beforeQty : 0
-      const qtySold = t.quantity
+      const qtySold = t.shares
       bySymbol[s].quantity = Math.max(0, beforeQty - qtySold)
       bySymbol[s].totalCost = Math.max(0, bySymbol[s].totalCost - avgCost * qtySold)
       bySymbol[s].lastPrice = t.price
@@ -54,6 +56,14 @@ export function calculateHoldings(transactions: Transaction[]) {
 
     if (t.type === 'dividend' && t.amount) {
       bySymbol[s].annualDividends += t.amount
+    }
+
+    if (t.type === 'drip' && t.amount && t.shares && t.price) {
+      // A DRIP is both dividend income and a reinvested share purchase.
+      bySymbol[s].annualDividends += t.amount
+      bySymbol[s].quantity += t.shares
+      bySymbol[s].totalCost += t.amount
+      bySymbol[s].lastPrice = t.price
     }
   }
 

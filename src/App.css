@@ -261,13 +261,420 @@
 .holdings-table td.negative { color: var(--danger) }
 
 .page-simple { padding: 8px 6px }
-.tx-table { width: 100%; border-collapse: collapse }
-.tx-table th, .tx-table td { padding: 8px 10px; border-bottom: 1px solid var(--border) }
+.transactions-page {
+  display: grid;
+  gap: 14px;
+}
+
+.transactions-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.transactions-header .muted {
+  margin-top: 3px;
+  font-size: 13px;
+}
+
+.tx-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(16, 24, 33, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.tx-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.tx-table th,
+.tx-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tx-table th {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(7, 11, 17, 0.42);
+}
+
+.tx-table tbody tr:hover {
+  background: rgba(149, 160, 174, 0.035);
+}
+
+.tx-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ticker-cell,
+.numeric-cell {
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+  font-weight: 680;
+}
+
+.numeric-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.notes-cell {
+  max-width: 220px;
+  color: var(--text-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-actions {
+  display: flex;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.tx-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(149, 160, 174, 0.07);
+  color: var(--text-h);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.tx-badge.buy,
+.tx-badge.drip,
+.tx-badge.deposit {
+  border-color: rgba(79, 180, 119, 0.28);
+  background: rgba(79, 180, 119, 0.09);
+  color: #b9f0c9;
+}
+
+.tx-badge.sell,
+.tx-badge.withdrawal {
+  border-color: rgba(215, 103, 103, 0.3);
+  background: rgba(215, 103, 103, 0.09);
+  color: #f3b7b7;
+}
+
+.tx-badge.dividend {
+  border-color: rgba(111, 128, 150, 0.36);
+  background: rgba(111, 128, 150, 0.12);
+  color: #dce6f2;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(2, 4, 8, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.transaction-modal {
+  width: min(760px, 100%);
+  max-height: min(86vh, 820px);
+  overflow-y: auto;
+  border: 1px solid rgba(166, 176, 190, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(79, 180, 119, 0.04), transparent 12rem),
+    rgba(13, 20, 28, 0.98);
+  box-shadow: var(--shadow-major);
+}
+
+.transaction-modal form {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(16, 24, 33, 0.82);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: var(--text-h);
+  border-color: rgba(166, 176, 190, 0.3);
+}
+
+.transaction-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.transaction-form-grid label,
+.notes-field {
+  display: grid;
+  gap: 6px;
+}
+
+.transaction-form-grid span,
+.notes-field span {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.transaction-form-grid input,
+.transaction-form-grid select,
+.notes-field textarea {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(7, 11, 17, 0.72);
+  color: var(--text-h);
+  font: inherit;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.transaction-form-grid input:focus,
+.transaction-form-grid select:focus,
+.notes-field textarea:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px rgba(79, 180, 119, 0.08);
+  background: rgba(10, 15, 23, 0.95);
+}
+
+.transaction-form-grid option {
+  color: var(--text-h);
+  background: var(--surface-2);
+}
+
+.notes-field textarea {
+  resize: vertical;
+}
+
+.form-errors {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(215, 103, 103, 0.28);
+  border-radius: 7px;
+  background: rgba(215, 103, 103, 0.08);
+  color: #f3b7b7;
+  font-size: 12px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 2px;
+}
+
+.income-modules-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+  gap: 12px;
+}
+
+.cash-income-module,
+.total-income-module {
+  background:
+    linear-gradient(180deg, rgba(111, 128, 150, 0.055), transparent 13rem),
+    rgba(14, 21, 30, 0.96);
+}
+
+.hysa-settings-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 0.7fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.hysa-settings-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.hysa-settings-grid span,
+.hysa-income-grid span,
+.total-income-grid span,
+.total-income-hero span,
+.income-summary-strip span,
+.dividend-list-card li span {
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
+.hysa-settings-grid span {
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hysa-settings-grid input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(7, 11, 17, 0.62);
+  color: var(--text-h);
+  font: inherit;
+  padding: 8px 10px;
+  outline: none;
+}
+
+.hysa-settings-grid input:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px rgba(79, 180, 119, 0.08);
+}
+
+.hysa-income-grid,
+.total-income-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.hysa-income-grid div,
+.total-income-grid div,
+.income-summary-strip div {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(7, 11, 17, 0.44);
+}
+
+.hysa-income-grid strong,
+.total-income-grid strong,
+.income-summary-strip strong,
+.dividend-list-card li strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-h);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.total-income-module {
+  border-color: rgba(79, 180, 119, 0.18);
+}
+
+.total-income-hero {
+  padding: 12px;
+  border: 1px solid rgba(79, 180, 119, 0.2);
+  border-radius: 8px;
+  background: rgba(79, 180, 119, 0.08);
+}
+
+.total-income-hero strong {
+  display: block;
+  margin-top: 3px;
+  color: #dff7e8;
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dividends-page {
+  display: grid;
+  gap: 14px;
+}
+
+.income-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dividend-list-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(16, 24, 33, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.dividend-list-card h3 {
+  margin: 0 0 10px;
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.dividend-list-card ul {
+  display: grid;
+  gap: 7px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.dividend-list-card li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.dividend-list-card li:last-child {
+  border-bottom: 0;
+}
 
 @media (max-width: 800px) {
   .sidebar { display: none }
   .app-main { padding: 12px }
   .metrics-row { gap: 10px }
+  .transactions-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .transaction-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .income-modules-grid,
+  .hysa-settings-grid,
+  .hysa-income-grid,
+  .total-income-grid,
+  .income-summary-strip {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Layout and topbar */
@@ -470,8 +877,6 @@ select:focus-visible,
 }
 
 .card-allocation h3,
-.card-health h3,
-.card-dividend h3,
 .card-tools h3 {
   font-size: 13px;
   font-weight: 720;
@@ -541,17 +946,14 @@ select:focus-visible,
 }
 
 .header-context span,
-.performance-stats span,
-.diagnostic-list span,
-.income-meta span {
+.performance-stats span {
   display: block;
   color: var(--text-soft);
   font-size: 11px;
 }
 
 .header-context strong,
-.performance-stats strong,
-.diagnostic-list strong {
+.performance-stats strong {
   display: block;
   color: var(--text-h);
   font-size: 12px;
@@ -752,13 +1154,6 @@ select:focus-visible,
   background: var(--accent);
 }
 
-.insight-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
 .performance-panel {
   min-height: 430px;
   padding: 18px 18px 14px;
@@ -807,7 +1202,7 @@ select:focus-visible,
 }
 
 .performance-stats div,
-.diagnostic-list div {
+.performance-stats div {
   padding: 9px 11px;
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 6px;
@@ -823,29 +1218,6 @@ select:focus-visible,
   min-height: 218px;
   background: rgba(13, 20, 28, 0.92);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
-}
-
-.card-health {
-  flex: 1;
-  background: rgba(13, 20, 28, 0.88);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
-}
-
-.diagnostic-list {
-  display: grid;
-  gap: 7px;
-}
-
-.diagnostic-list div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.diagnostic-list strong {
-  text-align: right;
-  margin-top: 0;
 }
 
 .holdings-panel {
@@ -1009,6 +1381,7 @@ select:focus-visible,
   color: #d8e0ea;
   border: 1px solid rgba(126, 145, 166, 0.28);
   border-radius: 7px;
+  padding: 8px 11px;
   cursor: pointer;
   transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
@@ -1024,17 +1397,37 @@ select:focus-visible,
   font-size: 12px;
 }
 
-.secondary-grid {
-  display: grid;
-  grid-template-columns: minmax(260px, 0.75fr) minmax(340px, 0.9fr) minmax(0, 1.1fr);
-  gap: 12px;
-  align-items: stretch;
+.btn.primary {
+  border-color: rgba(79, 180, 119, 0.34);
+  background: rgba(79, 180, 119, 0.16);
+  color: #dff7e8;
+  font-weight: 760;
 }
 
-.card-dividend {
-  min-height: 158px;
-  background: rgba(13, 20, 28, 0.92);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+.btn.primary:hover {
+  background: rgba(79, 180, 119, 0.22);
+  border-color: rgba(79, 180, 119, 0.46);
+}
+
+.btn.ghost {
+  background: rgba(12, 18, 26, 0.56);
+}
+
+.btn.danger {
+  border-color: rgba(215, 103, 103, 0.28);
+  color: #f0b1b1;
+}
+
+.btn.danger:hover {
+  background: rgba(215, 103, 103, 0.12);
+  border-color: rgba(215, 103, 103, 0.4);
+}
+
+.secondary-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+  gap: 12px;
+  align-items: stretch;
 }
 
 .card-tools {
@@ -1061,7 +1454,7 @@ select:focus-visible,
 .tool-desc { font-size:12px; color:var(--text-soft); margin-top:4px }
 
 .chart-header,
-.dividend-card-content {
+.chart-header {
   display: flex;
   align-items: center;
 }
@@ -1069,43 +1462,6 @@ select:focus-visible,
 .chart-header {
   justify-content: space-between;
   gap: 12px;
-}
-
-.dividend-card-content {
-  gap: 14px;
-  margin-top: 8px;
-}
-
-.dividend-summary {
-  flex: 1;
-  min-width: 0;
-}
-
-.dividend-summary-value {
-  color: var(--text-h);
-  font-variant-numeric: tabular-nums;
-  font-size: 17px;
-  font-weight: 720;
-  margin-top: 4px;
-}
-
-.income-meta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.income-meta span {
-  padding: 7px 8px;
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  border-radius: 7px;
-  background: rgba(8, 13, 22, 0.32);
-}
-
-.dividend-chart {
-  width: 176px;
-  min-width: 156px;
 }
 
 .donut-chart {
@@ -1199,18 +1555,15 @@ select:focus-visible,
 @media (max-width: 1100px) {
   .dashboard-main,
   .secondary-grid { grid-template-columns: 1fr }
-  .insight-stack { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
   .dividend-intelligence-grid { grid-template-columns: 1fr }
   .dividend-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) }
 }
 
 @media (max-width: 900px) {
   .dashboard-main,
-  .insight-stack { grid-template-columns: 1fr; }
   .tools-grid { grid-template-columns: repeat(2,1fr) }
   .search-input { width: 240px }
   .performance-stats,
-  .income-meta,
   .dividend-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) }
   .dividend-intelligence-header { display: block }
   .dividend-status { margin-top: 10px; min-width: 0 }
@@ -1223,4 +1576,3 @@ select:focus-visible,
   .header-context { justify-content: stretch; margin-top: 10px }
   .header-context div { flex: 1 }
 }
-
