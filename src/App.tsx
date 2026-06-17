@@ -5,17 +5,17 @@ import Dashboard from './pages/Dashboard'
 import type { BankCashSettings } from './types/bankCash'
 import type { HysaSettings } from './types/hysa'
 import type { PositionsSnapshot } from './types/position'
-import type { SchgGoalSettings } from './types/schgGoal'
+import type { QqqmGoalSettings } from './types/qqqmGoal'
 import { loadBankCashSettings, saveBankCashSettings } from './utils/bankCashStorage'
 import { loadHysaSettings, saveHysaSettings } from './utils/hysaStorage'
 import { loadPositionsSnapshot, savePositionsSnapshot } from './utils/positionsStorage'
-import { loadSchgGoalSettings, saveSchgGoalSettings } from './utils/schgGoalStorage'
+import { loadQqqmGoalSettings, saveQqqmGoalSettings } from './utils/qqqmGoalStorage'
 
 function App() {
   const [hysaSettings, setHysaSettings] = useState<HysaSettings>(loadHysaSettings)
   const [bankCashSettings, setBankCashSettings] = useState<BankCashSettings>(loadBankCashSettings)
   const [positionsSnapshot, setPositionsSnapshot] = useState<PositionsSnapshot | undefined>(loadPositionsSnapshot)
-  const [schgGoalSettings, setSchgGoalSettings] = useState<SchgGoalSettings>(loadSchgGoalSettings)
+  const [qqqmGoalSettings, setQqqmGoalSettings] = useState<QqqmGoalSettings>(loadQqqmGoalSettings)
 
   useEffect(() => {
     saveHysaSettings(hysaSettings)
@@ -30,8 +30,8 @@ function App() {
   }, [positionsSnapshot])
 
   useEffect(() => {
-    saveSchgGoalSettings(schgGoalSettings)
-  }, [schgGoalSettings])
+    saveQqqmGoalSettings(qqqmGoalSettings)
+  }, [qqqmGoalSettings])
 
   return (
     <Layout>
@@ -42,8 +42,8 @@ function App() {
         onHysaSettingsChange={setHysaSettings}
         bankCashSettings={bankCashSettings}
         onBankCashSettingsChange={setBankCashSettings}
-        schgGoalSettings={schgGoalSettings}
-        onSchgGoalSettingsChange={setSchgGoalSettings}
+        qqqmGoalSettings={qqqmGoalSettings}
+        onQqqmGoalSettingsChange={setQqqmGoalSettings}
       />
     </Layout>
   )

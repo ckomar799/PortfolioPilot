@@ -9,9 +9,10 @@ import MetricCard from '../components/MetricCard'
 import type { BankCashSettings } from '../types/bankCash'
 import type { HysaSettings } from '../types/hysa'
 import type { PositionsSnapshot } from '../types/position'
-import type { SchgGoalSettings } from '../types/schgGoal'
+import type { QqqmGoalSettings } from '../types/qqqmGoal'
 import { formatCurrency, formatPercent, formatSignedNumber } from '../utils/format'
 import { calculateHysaIncome } from '../utils/hysa'
+import { useAnimatedNumber } from '../utils/motion'
 import { positionsToDashboardData } from '../utils/portfolioSnapshot'
 
 type DashboardProps = {
@@ -21,8 +22,8 @@ type DashboardProps = {
   onHysaSettingsChange: (settings: HysaSettings) => void
   bankCashSettings: BankCashSettings
   onBankCashSettingsChange: (settings: BankCashSettings) => void
-  schgGoalSettings: SchgGoalSettings
-  onSchgGoalSettingsChange: (settings: SchgGoalSettings) => void
+  qqqmGoalSettings: QqqmGoalSettings
+  onQqqmGoalSettingsChange: (settings: QqqmGoalSettings) => void
 }
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -44,8 +45,8 @@ export default function Dashboard({
   onHysaSettingsChange,
   bankCashSettings,
   onBankCashSettingsChange,
-  schgGoalSettings,
-  onSchgGoalSettingsChange,
+  qqqmGoalSettings,
+  onQqqmGoalSettingsChange,
 }: DashboardProps) {
   const [isPositionsImportOpen, setIsPositionsImportOpen] = useState(false)
   const [isHysaModalOpen, setIsHysaModalOpen] = useState(false)
@@ -61,22 +62,23 @@ export default function Dashboard({
   }
   const hysaIncome = calculateHysaIncome(hysaSettings)
   const netWorth = portfolio.totalMarketValue + hysaSettings.balance + bankCashSettings.balance
+  const animatedNetWorth = useAnimatedNumber(netWorth)
   const dividendIncome = portfolio.annualDividends
   const passiveIncome = dividendIncome + hysaIncome.annualInterest
   const unrealizedReturn = portfolio.totalCostBasis ? (portfolio.totalGainLoss / portfolio.totalCostBasis) * 100 : 0
   const dayChange = positionsSnapshot?.positions.reduce((sum, position) => sum + (position.todaysGainLossDollar ?? 0), 0) ?? 0
   const sortedHoldings = holdings.slice().sort((a, b) => b.marketValue - a.marketValue)
   const allocationData = sortedHoldings.map((holding) => ({ ticker: holding.symbol, name: holding.securityName ?? holding.symbol, value: holding.marketValue }))
-  const schgHoldings = holdings.filter((holding) => holding.symbol.toUpperCase() === 'SCHG')
-  const schgValue = schgHoldings.reduce((sum, holding) => sum + holding.marketValue, 0)
-  const schgShares = schgHoldings.reduce((sum, holding) => sum + holding.quantity, 0)
-  const schgPrice = schgHoldings.find((holding) => holding.marketPrice > 0)?.marketPrice ?? (schgShares ? schgValue / schgShares : 0)
-  const schgCurrentWeight = portfolio.totalMarketValue ? (schgValue / portfolio.totalMarketValue) * 100 : 0
-  const schgTargetPercent = schgGoalSettings.targetAllocationPercent
-  const schgTargetValue = portfolio.totalMarketValue * (schgTargetPercent / 100)
-  const schgDollarGap = Math.max(schgTargetValue - schgValue, 0)
-  const schgSharesNeeded = schgPrice ? schgDollarGap / schgPrice : 0
-  const schgProgress = schgTargetPercent ? Math.min((schgCurrentWeight / schgTargetPercent) * 100, 100) : 0
+  const qqqmHoldings = holdings.filter((holding) => holding.symbol.toUpperCase() === 'QQQM')
+  const qqqmValue = qqqmHoldings.reduce((sum, holding) => sum + holding.marketValue, 0)
+  const qqqmShares = qqqmHoldings.reduce((sum, holding) => sum + holding.quantity, 0)
+  const qqqmPrice = qqqmHoldings.find((holding) => holding.marketPrice > 0)?.marketPrice ?? (qqqmShares ? qqqmValue / qqqmShares : 0)
+  const qqqmCurrentWeight = portfolio.totalMarketValue ? (qqqmValue / portfolio.totalMarketValue) * 100 : 0
+  const qqqmTargetPercent = qqqmGoalSettings.targetAllocationPercent
+  const qqqmTargetValue = portfolio.totalMarketValue * (qqqmTargetPercent / 100)
+  const qqqmDollarGap = Math.max(qqqmTargetValue - qqqmValue, 0)
+  const qqqmSharesNeeded = qqqmPrice ? qqqmDollarGap / qqqmPrice : 0
+  const qqqmProgress = qqqmTargetPercent ? Math.min((qqqmCurrentWeight / qqqmTargetPercent) * 100, 100) : 0
   const concentrationTop1 = portfolio.totalMarketValue ? (sortedHoldings.slice(0, 1).reduce((sum, holding) => sum + holding.marketValue, 0) / portfolio.totalMarketValue) * 100 : 0
   const concentrationTop3 = portfolio.totalMarketValue ? (sortedHoldings.slice(0, 3).reduce((sum, holding) => sum + holding.marketValue, 0) / portfolio.totalMarketValue) * 100 : 0
   const concentrationTop5 = portfolio.totalMarketValue ? (sortedHoldings.slice(0, 5).reduce((sum, holding) => sum + holding.marketValue, 0) / portfolio.totalMarketValue) * 100 : 0
@@ -104,10 +106,10 @@ export default function Dashboard({
     setIsPositionsImportOpen(false)
   }
 
-  function updateSchgTarget(value: string) {
+  function updateQqqmTarget(value: string) {
     const parsed = Number(value)
 
-    onSchgGoalSettingsChange({
+    onQqqmGoalSettingsChange({
       targetAllocationPercent: Number.isFinite(parsed) ? Math.max(0, Math.min(parsed, 100)) : 50,
     })
   }
@@ -129,7 +131,7 @@ export default function Dashboard({
       <div className="net-worth-hero">
         <div className="net-worth-main">
           <span>Total Net Worth</span>
-          <strong>{formatCurrency(netWorth, { compact: true })}</strong>
+          <strong>{formatCurrency(animatedNetWorth, { compact: true })}</strong>
           <div className="hero-support-metrics">
             <div>
               <span>Unrealized Gain</span>
@@ -200,46 +202,46 @@ export default function Dashboard({
           ) : <div className="source-empty">Import a Fidelity positions CSV to see holding allocation.</div>}
         </Card>
 
-        <Card className="snapshot-panel schg-goal-card">
+        <Card className="snapshot-panel qqqm-goal-card">
           <div className="chart-header">
             <div>
-              <h3>SCHG Goal</h3>
-              <p className="panel-subtitle">Current-data allocation target from imported holdings.</p>
+              <h3>QQQM Core Goal</h3>
+              <p className="panel-subtitle">Preferred core-growth target measured against imported holdings.</p>
             </div>
-            <label className="schg-target-input">
+            <label className="qqqm-target-input">
               <span>Target</span>
               <input
                 type="number"
                 min="0"
                 max="100"
                 step="1"
-                value={Number(schgTargetPercent).toString()}
-                onChange={(event) => updateSchgTarget(event.target.value)}
+                value={Number(qqqmTargetPercent).toString()}
+                onChange={(event) => updateQqqmTarget(event.target.value)}
               />
               <em>%</em>
             </label>
           </div>
-          <div className="schg-allocation-hero">
+          <div className="qqqm-allocation-hero">
             <div>
               <span>Current</span>
-              <strong>{formatPercent(schgCurrentWeight)}</strong>
+              <strong>{formatPercent(qqqmCurrentWeight)}</strong>
             </div>
             <div>
               <span>Target</span>
-              <strong>{formatPercent(schgTargetPercent)}</strong>
+              <strong>{formatPercent(qqqmTargetPercent)}</strong>
             </div>
           </div>
-          <div className="schg-progress-track"><i style={{ width: `${schgProgress}%` }} /></div>
-          <div className="schg-completion-line">{formatPercent(schgProgress)} of goal completed</div>
-          <div className="schg-value-target">
-            <span>SCHG value</span>
-            <strong>{formatCurrency(schgValue, { compact: true })} / {formatCurrency(schgTargetValue, { compact: true })}</strong>
+          <div className="qqqm-progress-track"><i style={{ width: `${qqqmProgress}%` }} /></div>
+          <div className="qqqm-completion-line">{formatPercent(qqqmProgress)} of goal completed</div>
+          <div className="qqqm-value-target">
+            <span>QQQM value</span>
+            <strong>{formatCurrency(qqqmValue, { compact: true })} / {formatCurrency(qqqmTargetValue, { compact: true })}</strong>
           </div>
-          <div className="schg-gap-callout">Need {formatCurrency(schgDollarGap, { compact: true })} more</div>
-          <div className="schg-goal-footer">
-            <div><span>Price</span><strong>{schgPrice ? formatCurrency(schgPrice) : '-'}</strong></div>
-            <div><span>Shares</span><strong>{schgShares.toLocaleString(undefined, { maximumFractionDigits: 4 })}</strong></div>
-            <div><span>Approx needed</span><strong>{schgPrice ? Math.ceil(schgSharesNeeded).toLocaleString() : '-'}</strong></div>
+          <div className="qqqm-gap-callout">Need {formatCurrency(qqqmDollarGap, { compact: true })} more</div>
+          <div className="qqqm-goal-footer">
+            <div><span>Price</span><strong>{qqqmPrice ? formatCurrency(qqqmPrice) : '-'}</strong></div>
+            <div><span>Shares</span><strong>{qqqmShares.toLocaleString(undefined, { maximumFractionDigits: 4 })}</strong></div>
+            <div><span>Approx needed</span><strong>{qqqmPrice ? Math.ceil(qqqmSharesNeeded).toLocaleString() : '-'}</strong></div>
           </div>
         </Card>
 

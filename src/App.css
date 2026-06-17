@@ -4,6 +4,59 @@
   --card-bg: var(--surface-2);
 }
 
+@keyframes dashboardFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sectionRiseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardRiseIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tileSettleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .app-root {
   display: flex;
   width: 100%;
@@ -775,7 +828,7 @@
   align-self: stretch;
 }
 
-.schg-goal-card {
+.qqqm-goal-card {
   border-color: rgba(79, 180, 119, 0.22);
   background: rgba(13, 20, 28, 0.96);
 }
@@ -784,7 +837,7 @@
   grid-row: span 2;
 }
 
-.schg-target-input {
+.qqqm-target-input {
   display: grid;
   grid-template-columns: auto 46px auto;
   align-items: center;
@@ -795,7 +848,7 @@
   text-transform: uppercase;
 }
 
-.schg-target-input input {
+.qqqm-target-input input {
   width: 42px;
   min-width: 0;
   padding: 5px 6px;
@@ -808,7 +861,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.schg-target-input em {
+.qqqm-target-input em {
   font-style: normal;
 }
 
@@ -819,14 +872,14 @@
   gap: 7px;
 }
 
-.schg-allocation-hero {
+.qqqm-allocation-hero {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-top: 8px;
 }
 
-.schg-allocation-hero div {
+.qqqm-allocation-hero div {
   display: grid;
   gap: 3px;
   min-width: 0;
@@ -836,7 +889,7 @@
   background: rgba(7, 11, 17, 0.3);
 }
 
-.schg-allocation-hero span {
+.qqqm-allocation-hero span {
   display: block;
   color: var(--text-soft);
   font-size: 10px;
@@ -845,7 +898,7 @@
   text-transform: uppercase;
 }
 
-.schg-allocation-hero strong {
+.qqqm-allocation-hero strong {
   display: block;
   color: #dff7e8;
   font-size: 21px;
@@ -853,7 +906,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.schg-completion-line {
+.qqqm-completion-line {
   margin-top: 7px;
   color: #dff7e8;
   font-size: 12.5px;
@@ -861,7 +914,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.schg-progress-track {
+.qqqm-progress-track {
   height: 11px;
   margin-top: 10px;
   overflow: hidden;
@@ -869,22 +922,22 @@
   background: rgba(149, 160, 174, 0.18);
 }
 
-.schg-progress-track i {
+.qqqm-progress-track i {
   display: block;
   height: 100%;
   border-radius: inherit;
   background: #4fb477;
 }
 
-.schg-value-target {
+.qqqm-value-target {
   display: grid;
   gap: 3px;
   margin-top: 11px;
   min-width: 0;
 }
 
-.schg-value-target span,
-.schg-goal-footer span {
+.qqqm-value-target span,
+.qqqm-goal-footer span {
   color: var(--text-soft);
   font-size: 10px;
   font-weight: 740;
@@ -892,7 +945,7 @@
   text-transform: uppercase;
 }
 
-.schg-value-target strong {
+.qqqm-value-target strong {
   display: block;
   color: var(--text-h);
   font-size: 17px;
@@ -900,7 +953,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.schg-gap-callout {
+.qqqm-gap-callout {
   margin-top: 5px;
   color: #dff7e8;
   font-size: 13px;
@@ -908,7 +961,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.schg-goal-footer {
+.qqqm-goal-footer {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 7px;
@@ -917,11 +970,11 @@
   border-top: 1px solid rgba(149, 160, 174, 0.1);
 }
 
-.schg-goal-footer div {
+.qqqm-goal-footer div {
   min-width: 0;
 }
 
-.schg-goal-footer strong {
+.qqqm-goal-footer strong {
   display: block;
   margin-top: 3px;
   color: var(--text-h);
@@ -1505,6 +1558,91 @@ select:focus-visible,
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  animation: dashboardFadeIn 320ms ease-out both;
+}
+
+.dashboard-header,
+.net-worth-hero,
+.compact-source-row,
+.metrics-row,
+.snapshot-overview-grid,
+.cash-and-income-grid,
+.holdings-panel {
+  animation: sectionRiseIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.net-worth-hero {
+  animation-delay: 45ms;
+}
+
+.compact-source-row {
+  animation-delay: 90ms;
+}
+
+.metrics-row {
+  animation-delay: 120ms;
+}
+
+.snapshot-overview-grid {
+  animation-delay: 170ms;
+}
+
+.cash-and-income-grid {
+  animation-delay: 210ms;
+}
+
+.holdings-panel {
+  animation-delay: 240ms;
+}
+
+.metrics-row .metric-card {
+  animation: cardRiseIn 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.metrics-row .metric-card:nth-child(1) {
+  animation-delay: 140ms;
+}
+
+.metrics-row .metric-card:nth-child(2) {
+  animation-delay: 175ms;
+}
+
+.metrics-row .metric-card:nth-child(3) {
+  animation-delay: 210ms;
+}
+
+.metrics-row .metric-card:nth-child(4) {
+  animation-delay: 245ms;
+}
+
+.metrics-row .metric-card:nth-child(5) {
+  animation-delay: 280ms;
+}
+
+.snapshot-overview-grid > .card,
+.cash-and-income-grid > .card {
+  animation: cardRiseIn 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.snapshot-overview-grid > .card:nth-child(1),
+.cash-and-income-grid > .card:nth-child(1) {
+  animation-delay: 210ms;
+}
+
+.snapshot-overview-grid > .card:nth-child(2) {
+  animation-delay: 245ms;
+}
+
+.snapshot-overview-grid > .card:nth-child(3) {
+  animation-delay: 280ms;
+}
+
+.snapshot-overview-grid > .card:nth-child(4) {
+  animation-delay: 315ms;
+}
+
+.snapshot-overview-grid > .card:nth-child(5) {
+  animation-delay: 350ms;
 }
 
 .dashboard-header {
@@ -2040,6 +2178,7 @@ select:focus-visible,
 }
 
 .holdings-table-main tbody tr {
+  animation: rowFadeIn 260ms ease-out both;
   transition: background 140ms ease, box-shadow 140ms ease;
 }
 
@@ -2187,13 +2326,19 @@ select:focus-visible,
   border-radius: 7px;
   padding: 8px 11px;
   cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .btn:hover {
   background: rgba(34, 49, 69, 0.9);
   border-color: rgba(166, 176, 190, 0.32);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
   transform: translateY(-1px);
+}
+
+.btn:active {
+  box-shadow: none;
+  transform: translateY(0);
 }
 
 .btn.small {
@@ -2296,6 +2441,7 @@ select:focus-visible,
   border-radius: 6px;
   color: #f6fff8;
   overflow: hidden;
+  animation: tileSettleIn 300ms ease-out both;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11), inset 0 -28px 44px rgba(0, 0, 0, 0.12);
 }
 
@@ -2467,7 +2613,7 @@ select:focus-visible,
   .snapshot-overview-grid.no-leaders {
     grid-template-columns: 1fr;
   }
-  .schg-goal-card .chart-header {
+  .qqqm-goal-card .chart-header {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -2493,3 +2639,33 @@ select:focus-visible,
     min-width: 96px;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0ms !important;
+  }
+
+  .dashboard-grid,
+  .dashboard-header,
+  .net-worth-hero,
+  .compact-source-row,
+  .metrics-row,
+  .snapshot-overview-grid,
+  .cash-and-income-grid,
+  .holdings-panel,
+  .metrics-row .metric-card,
+  .snapshot-overview-grid > .card,
+  .cash-and-income-grid > .card,
+  .allocation-tile,
+  .holdings-table-main tbody tr {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+

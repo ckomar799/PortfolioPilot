@@ -53,6 +53,7 @@ export default function AllocationTreemap({
                 background: isOther ? undefined : TILE_COLORS[tile.ticker] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length],
                 flexGrow: Math.max(tile.value, 1),
                 flexBasis: `${Math.max(weight * 2.4, 16)}%`,
+                animationDelay: `${Math.min(index * 22, 180)}ms`,
               }}
               title={`${tile.name}: ${formatCurrency(tile.value, { compact: true })} (${formatPercent(weight)})`}
             >

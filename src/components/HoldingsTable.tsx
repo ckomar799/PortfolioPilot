@@ -27,7 +27,7 @@ export default function HoldingsTable({ holdings, totalMarketValue }: { holdings
             const returnPercent = holding.totalGainLossPercent ?? (holding.costBasis ? (holding.gainLoss / holding.costBasis) * 100 : 0)
 
             return (
-              <tr key={`${holding.symbol}-${holding.accountName ?? 'account'}`}>
+              <tr key={`${holding.symbol}-${holding.accountName ?? 'account'}`} style={{ animationDelay: `${Math.min(index * 18, 220)}ms` }}>
                 <td className="rank-cell">{index + 1}</td>
                 <td className="security-cell">
                   <span>{holding.securityName ?? holding.symbol}</span>

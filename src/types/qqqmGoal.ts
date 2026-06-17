@@ -1,3 +1,3 @@
-export type SchgGoalSettings = {
+export type QqqmGoalSettings = {
   targetAllocationPercent: number
 }
