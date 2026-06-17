@@ -9,6 +9,7 @@ export default function HoldingsTable({ holdings, totalMarketValue }: { holdings
       <table className="holdings-table-main compact-holdings-table">
         <thead>
           <tr>
+            <th>Rank</th>
             <th>Name</th>
             <th>Ticker</th>
             <th>Qty</th>
@@ -21,12 +22,13 @@ export default function HoldingsTable({ holdings, totalMarketValue }: { holdings
           </tr>
         </thead>
         <tbody>
-          {sortedHoldings.map((holding) => {
+          {sortedHoldings.map((holding, index) => {
             const weight = totalMarketValue ? (holding.marketValue / totalMarketValue) * 100 : 0
             const returnPercent = holding.totalGainLossPercent ?? (holding.costBasis ? (holding.gainLoss / holding.costBasis) * 100 : 0)
 
             return (
               <tr key={`${holding.symbol}-${holding.accountName ?? 'account'}`}>
+                <td className="rank-cell">{index + 1}</td>
                 <td className="security-cell">
                   <span>{holding.securityName ?? holding.symbol}</span>
                 </td>
