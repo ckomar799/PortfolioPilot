@@ -15,7 +15,6 @@ function toNumber(value: string) {
 
 export default function BankCashModal({ settings, onSave, onCancel }: BankCashModalProps) {
   const [balance, setBalance] = useState(settings.balance.toString())
-  const [notes, setNotes] = useState(settings.notes ?? '')
   const [error, setError] = useState('')
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -28,18 +27,18 @@ export default function BankCashModal({ settings, onSave, onCancel }: BankCashMo
 
     onSave({
       balance: toNumber(balance),
-      notes: notes.trim() || undefined,
     })
   }
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onCancel}>
       <div className="cash-modal" role="dialog" aria-modal="true" aria-labelledby="bank-cash-modal-title" onMouseDown={(event) => event.stopPropagation()}>
-        <form onSubmit={handleSubmit}>
+        <form className="cash-modal-form" onSubmit={handleSubmit}>
           <div className="modal-header">
             <div>
               <div className="eyebrow">Manual Cash Input</div>
               <h2 id="bank-cash-modal-title">Update Checking / Bank Cash</h2>
+              <p className="modal-subtitle">Keep the cash balance used in your local net worth snapshot current.</p>
             </div>
             <button className="modal-close" type="button" onClick={onCancel} aria-label="Close bank cash modal">x</button>
           </div>
@@ -49,14 +48,12 @@ export default function BankCashModal({ settings, onSave, onCancel }: BankCashMo
           <div className="cash-form-grid single">
             <label>
               <span>Cash balance</span>
-              <input type="number" min="0" step="any" value={balance} onChange={(event) => setBalance(event.target.value)} />
+              <div className="money-input-shell">
+                <em>$</em>
+                <input type="text" inputMode="decimal" value={balance} onChange={(event) => { setError(''); setBalance(event.target.value) }} />
+              </div>
             </label>
           </div>
-
-          <label className="notes-field">
-            <span>Notes</span>
-            <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} />
-          </label>
 
           <div className="modal-actions">
             <button className="btn ghost" type="button" onClick={onCancel}>Cancel</button>

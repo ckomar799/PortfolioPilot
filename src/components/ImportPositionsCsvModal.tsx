@@ -55,6 +55,7 @@ export default function ImportPositionsCsvModal({ existingSnapshot, onConfirm, o
           <div>
             <div className="eyebrow">Current Holdings</div>
             <h2 id="positions-import-title">Import Positions CSV</h2>
+            <p className="modal-subtitle">Use the Fidelity Positions CSV export to refresh holdings, or a Fidelity dividend positions CSV to merge dividend fields.</p>
           </div>
           <button className="modal-close" type="button" onClick={onCancel} aria-label="Close positions import modal">x</button>
         </div>
@@ -71,9 +72,13 @@ export default function ImportPositionsCsvModal({ existingSnapshot, onConfirm, o
           </div>
         )}
 
-        <label className="csv-upload-zone">
-          <span>Upload Fidelity positions or dividend CSV</span>
-          <strong>{fileName || 'Choose positions CSV file'}</strong>
+        <label className={`csv-upload-zone${fileName ? ' has-file' : ''}`}>
+          <span className="csv-upload-icon" aria-hidden="true">{fileName ? 'CSV' : '+'}</span>
+          <span className="csv-upload-copy">
+            <span>Fidelity Positions CSV</span>
+            <strong>{fileName || 'Drop or choose a CSV file'}</strong>
+            <em>{fileName ? 'Ready to preview before import.' : 'Exports from Fidelity Positions are parsed locally in this browser.'}</em>
+          </span>
           <input type="file" accept=".csv,text/csv" onChange={handleFileChange} />
         </label>
 

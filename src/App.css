@@ -4,6 +4,16 @@
   --card-bg: var(--surface-2);
 }
 
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 @keyframes dashboardFadeIn {
   from {
     opacity: 0;
@@ -516,6 +526,24 @@
   box-shadow: var(--shadow-major);
 }
 
+.cash-modal {
+  width: min(560px, 100%);
+  max-height: min(88vh, 760px);
+  overflow-y: auto;
+  border: 1px solid rgba(166, 176, 190, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(79, 180, 119, 0.045), transparent 13rem),
+    rgba(13, 20, 28, 0.98);
+  box-shadow: var(--shadow-major);
+}
+
+.cash-modal-form {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
 .transaction-modal form {
   display: grid;
   gap: 14px;
@@ -533,6 +561,14 @@
   margin: 0;
 }
 
+.modal-subtitle {
+  max-width: 560px;
+  margin-top: 5px;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .modal-close {
   width: 32px;
   height: 32px;
@@ -541,26 +577,42 @@
   background: rgba(16, 24, 33, 0.82);
   color: var(--text);
   cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
 .modal-close:hover {
+  background: rgba(27, 42, 61, 0.78);
   color: var(--text-h);
   border-color: rgba(166, 176, 190, 0.3);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  transform: translateY(-1px);
 }
 
-.transaction-form-grid {
+.modal-close:active {
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+.transaction-form-grid,
+.cash-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
+.cash-form-grid.single {
+  grid-template-columns: 1fr;
+}
+
 .transaction-form-grid label,
+.cash-form-grid label,
 .notes-field {
   display: grid;
   gap: 6px;
 }
 
 .transaction-form-grid span,
+.cash-form-grid span,
 .notes-field span {
   color: var(--text-soft);
   font-size: 11px;
@@ -571,6 +623,7 @@
 
 .transaction-form-grid input,
 .transaction-form-grid select,
+.cash-form-grid input,
 .notes-field textarea {
   width: 100%;
   min-height: 38px;
@@ -586,6 +639,7 @@
 
 .transaction-form-grid input:focus,
 .transaction-form-grid select:focus,
+.cash-form-grid input:focus,
 .notes-field textarea:focus {
   border-color: var(--accent-border);
   box-shadow: 0 0 0 3px rgba(79, 180, 119, 0.08);
@@ -599,6 +653,96 @@
 
 .notes-field textarea {
   resize: vertical;
+}
+
+.money-input-shell {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid rgba(149, 160, 174, 0.13);
+  border-radius: 8px;
+  background: rgba(7, 11, 17, 0.6);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.money-input-shell:focus-within {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px rgba(79, 180, 119, 0.08), 0 12px 24px rgba(0, 0, 0, 0.16);
+  background: rgba(10, 15, 23, 0.96);
+  transform: translateY(-1px);
+}
+
+.money-input-shell em {
+  flex: 0 0 auto;
+  padding: 0 0 0 12px;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 760;
+}
+
+.money-input-shell input {
+  min-height: 42px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 18px;
+  font-weight: 760;
+  font-variant-numeric: tabular-nums;
+}
+
+.money-input-shell input:focus {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+}
+
+.money-input-shell input:focus-visible {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.percent-input-shell em {
+  padding: 0 12px 0 0;
+}
+
+.interest-preview-card {
+  padding: 12px;
+  border: 1px solid rgba(79, 180, 119, 0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(79, 180, 119, 0.035), transparent 8rem),
+    rgba(7, 11, 17, 0.44);
+}
+
+.interest-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.interest-preview-grid div {
+  padding: 10px;
+  border: 1px solid rgba(149, 160, 174, 0.1);
+  border-radius: 7px;
+  background: rgba(10, 15, 22, 0.7);
+}
+
+.interest-preview-grid span {
+  display: block;
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.interest-preview-grid strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-h);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
 }
 
 .form-errors {
@@ -632,22 +776,63 @@
 
 .csv-upload-zone {
   position: relative;
-  display: grid;
-  gap: 5px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 112px;
   padding: 18px;
-  border: 1px dashed rgba(166, 176, 190, 0.28);
+  border: 1px dashed rgba(166, 176, 190, 0.3);
   border-radius: 8px;
-  background: rgba(7, 11, 17, 0.48);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent),
+    rgba(7, 11, 17, 0.48);
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .csv-upload-zone:hover {
   border-color: var(--accent-border);
   background: rgba(7, 11, 17, 0.64);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.18);
+  transform: translateY(-1px);
 }
 
-.csv-upload-zone span {
+.csv-upload-zone.has-file {
+  border-color: rgba(79, 180, 119, 0.42);
+  background:
+    linear-gradient(180deg, rgba(79, 180, 119, 0.055), transparent 8rem),
+    rgba(7, 11, 17, 0.58);
+}
+
+.csv-upload-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid rgba(166, 176, 190, 0.16);
+  border-radius: 8px;
+  background: rgba(16, 24, 33, 0.86);
+  color: #dff7e8;
+  font-size: 15px;
+  font-weight: 860;
+  line-height: 1;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
+}
+
+.csv-upload-zone:not(.has-file) .csv-upload-icon {
+  color: var(--text-h);
+  font-size: 28px;
+  font-weight: 520;
+}
+
+.csv-upload-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.csv-upload-copy span {
   color: var(--text-soft);
   font-size: 11px;
   font-weight: 750;
@@ -655,9 +840,18 @@
   text-transform: uppercase;
 }
 
-.csv-upload-zone strong {
+.csv-upload-copy strong {
   color: var(--text-h);
-  font-size: 15px;
+  font-size: 17px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.csv-upload-copy em {
+  color: var(--text-soft);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
 }
 
 .csv-upload-zone input {
@@ -839,9 +1033,9 @@
 
 .qqqm-target-input {
   display: grid;
-  grid-template-columns: auto 46px auto;
+  grid-template-columns: auto minmax(64px, auto) auto;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
   color: var(--text-soft);
   font-size: 10px;
   font-weight: 760;
@@ -849,16 +1043,28 @@
 }
 
 .qqqm-target-input input {
-  width: 42px;
-  min-width: 0;
-  padding: 5px 6px;
+  width: 64px;
+  min-width: 64px;
+  min-height: 36px;
+  padding: 7px 10px;
   border: 1px solid rgba(149, 160, 174, 0.18);
-  border-radius: 6px;
+  border-radius: 7px;
   background: rgba(7, 11, 17, 0.52);
   color: var(--text-h);
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 760;
   font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.qqqm-target-input input:focus,
+.qqqm-target-input input:focus-visible {
+  border-color: var(--accent-border);
+  background: rgba(10, 15, 23, 0.94);
+  box-shadow: inset 0 0 0 1px rgba(79, 180, 119, 0.28), 0 0 0 2px rgba(79, 180, 119, 0.08);
 }
 
 .qqqm-target-input em {
@@ -1454,7 +1660,6 @@
 }
 
 button:focus-visible,
-input:focus-visible,
 select:focus-visible,
 .nav-item:focus-visible,
 .btn:focus-visible,
@@ -1462,6 +1667,12 @@ select:focus-visible,
   outline: 2px solid rgba(79, 180, 119, 0.85);
   outline-offset: 2px;
   box-shadow: 0 0 0 4px rgba(79, 180, 119, 0.1);
+}
+
+input:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: inset 0 0 0 1px rgba(79, 180, 119, 0.28), 0 0 0 2px rgba(79, 180, 119, 0.08);
 }
 
 .card:focus,
@@ -2605,6 +2816,43 @@ select:focus-visible,
 }
 
 @media (max-width: 620px) {
+  .modal-backdrop {
+    padding: 10px;
+    place-items: stretch;
+  }
+  .import-modal,
+  .cash-modal {
+    width: 100%;
+    max-height: calc(100vh - 20px);
+  }
+  .import-modal,
+  .cash-modal-form {
+    padding: 14px;
+  }
+  .modal-header {
+    gap: 10px;
+  }
+  .csv-upload-zone {
+    align-items: flex-start;
+    min-height: 0;
+    padding: 14px;
+  }
+  .csv-upload-icon {
+    width: 46px;
+    height: 46px;
+  }
+  .import-summary-grid,
+  .cash-form-grid,
+  .interest-preview-grid {
+    grid-template-columns: 1fr;
+  }
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .modal-actions .btn {
+    width: 100%;
+  }
   .metrics-row,
   .hysa-income-grid,
   .total-income-grid,
