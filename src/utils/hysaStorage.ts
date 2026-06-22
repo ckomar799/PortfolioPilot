@@ -3,8 +3,8 @@ import type { HysaSettings } from '../types/hysa'
 const STORAGE_KEY = 'portfolioPilot.hysaSettings.v1'
 
 export const defaultHysaSettings: HysaSettings = {
-  balance: 25000,
-  apy: 4.35,
+  balance: 0,
+  apy: 0,
 }
 
 function isHysaSettings(value: unknown): value is HysaSettings {
